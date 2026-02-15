@@ -1,0 +1,27 @@
+PRAGMA foreign_keys = ON;
+CREATE TABLE users(id INTEGER PRIMARY KEY AUTOINCREMENT,
+user_name TEXT NOT NULL,
+current_amount REAL NOT NULL,
+monthly_inputs REAL NOT NULL,
+monthly_outputs REAL NOT NULL);
+CREATE TABLE transactions(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	description TEXT,
+	amount REAL NOT NULL,
+	is_debt INTEGER NOT NULL,
+	created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+	user_id INTEGER NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE TABLE goals(
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	name TEXT NOT NULL,
+	description TEXT,
+	price REAL,
+	pros TEXT,
+	cons TEXT,
+	user_id INTEGER NOT NULL,
+	deadline TEXT NOT NULL,
+	FOREIGN KEY(user_id) REFERENCES users(id)
+ON DELETE CASCADE
+);
