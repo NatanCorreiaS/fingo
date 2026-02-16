@@ -32,7 +32,7 @@ func main() {
 
 	fmt.Println(*u2)
 
-	users, err := dbsqlite.ReturnAllUsers(db)
+	users, err := dbsqlite.GetAllUsers(db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func main() {
 		fmt.Println("usuario não foi deletado")
 	}
 
-	users, _ = dbsqlite.ReturnAllUsers(db)
+	users, _ = dbsqlite.GetAllUsers(db)
 	fmt.Println(users)
 
 	user, err = dbsqlite.UpdateUserByID(1, &model.User{UserName: "Sigma", CurrentAmount: 1000, MonthlyInputs: 800, MonthlyOutputs: 300}, db)

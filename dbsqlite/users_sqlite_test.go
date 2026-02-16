@@ -41,7 +41,7 @@ func TestUsersSQLite_TableDriven(t *testing.T) {
 		{
 			name: "ReturnAllUsers on empty DB returns zero users",
 			testFn: func(t *testing.T, db *sql.DB) {
-				users, err := ReturnAllUsers(db)
+				users, err := GetAllUsers(db)
 				if err != nil {
 					t.Fatalf("ReturnAllUsers() returned unexpected error on empty DB: %v", err)
 				}
@@ -71,7 +71,7 @@ func TestUsersSQLite_TableDriven(t *testing.T) {
 					t.Errorf("returned username mismatch: expected %q, got %q", u.UserName, uRet.UserName)
 				}
 				// verify via ReturnAllUsers as well
-				users, err := ReturnAllUsers(db)
+				users, err := GetAllUsers(db)
 				if err != nil {
 					t.Fatalf("ReturnAllUsers() returned error after insert: %v", err)
 				}

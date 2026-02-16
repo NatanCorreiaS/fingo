@@ -7,7 +7,7 @@ import (
 	"natan/fingo/model"
 )
 
-func ReturnAllUsers(db *sql.DB) ([]model.User, error) {
+func GetAllUsers(db *sql.DB) ([]model.User, error) {
 	const query = `
 	SELECT id, user_name, current_amount, monthly_inputs, monthly_outputs FROM users ORDER BY id;
 	`
