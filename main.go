@@ -65,6 +65,28 @@ func main() {
 	}
 
 	fmt.Println("User updated: ", *user)
+
+	desc1 := "Recebi uma mesada"
+	desc2 := "Comprei um facão"
+	transaction1 := model.Transaction{Desc: desc1, Amount: 200, IsDebt: false, UserID: 1}
+	transaction2 := model.Transaction{Desc: desc2, Amount: 50, IsDebt: true, UserID: 1}
+
+	_, err = dbsqlite.CreateTransaction(transaction1, db)
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = dbsqlite.CreateTransaction(transaction2, db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	transactions, err := dbsqlite.GetAllTransactions(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Print(transactions)
+
 	// log.Fatal(http.ListenAndServe(":9000", nil))
 
 }

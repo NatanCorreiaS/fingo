@@ -21,6 +21,7 @@ CREATE TABLE goals(
 	pros TEXT,
 	cons TEXT,
 	user_id INTEGER NOT NULL,
+	created_at TEXT DEFAULT CURRENT_TIMESTAMP,
 	deadline TEXT NOT NULL,
 	FOREIGN KEY(user_id) REFERENCES users(id)
 ON DELETE CASCADE
