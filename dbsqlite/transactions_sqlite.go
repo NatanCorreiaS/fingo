@@ -50,7 +50,7 @@ func GetTransactionByID(id int64, db *sql.DB) (*model.Transaction, error) {
 	// Scan must match the SELECT column order: id, description, amount, is_debt, created_at, user_id
 	if err := row.Scan(&transaction.ID, &transaction.Desc, &transaction.Amount, &transaction.IsDebt, &transaction.CreatedAt, &transaction.UserID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("user not found: %w", err)
+			return nil, fmt.Errorf("transaction not found: %w", err)
 		}
 		return nil, fmt.Errorf("could not scan the row into transaction struct: %w", err)
 	}
