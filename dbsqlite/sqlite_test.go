@@ -7,12 +7,12 @@ import (
 )
 
 // TestDatabaseLifecycle is a table-driven test that covers database creation,
-// schema initialization and the connection helper in fewer, idiomatic subtests.
+// schema initialization, and the connection helper in concise, idiomatic subtests.
 func TestDatabaseLifecycle(t *testing.T) {
 	tests := []struct {
 		name             string
-		createUsersTable bool // if true, create a users table before calling createDatabase
-		preCreateDB      bool // if true, create an empty fingo.db before running CheckAndCreate
+		createUsersTable bool // If true, create a users table before calling createDatabase
+		preCreateDB      bool // If true, create an empty fingo.db before running CheckAndCreate
 		wantCreateError  bool
 	}{
 		{"createDatabase: no existing tables", false, false, false},
@@ -21,18 +21,18 @@ func TestDatabaseLifecycle(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc // capture range variable
+		tc := tc // Capture the range variable
 		t.Run(tc.name, func(t *testing.T) {
-			// Ensure clean environment for each subtest
+			// Ensure a clean environment for each subtest
 			_ = os.Remove("fingo.db")
 
-			// Optionally create a DB file with an existing users table to trigger schema creation error
+			// Optionally create a database file with an existing users table to trigger a schema creation error
 			if tc.createUsersTable {
 				db, err := sql.Open("sqlite3", "file:fingo.db")
 				if err != nil {
 					t.Fatalf("setup: failed to open sqlite for setup: %v", err)
 				}
-				// create a users table so schema init in createDatabase fails
+				// Create a users table so schema initialization in createDatabase fails
 				if _, err := db.Exec("CREATE TABLE users (id INTEGER PRIMARY KEY);"); err != nil {
 					_ = db.Close()
 					t.Fatalf("setup: failed to create users table: %v", err)
@@ -40,17 +40,17 @@ func TestDatabaseLifecycle(t *testing.T) {
 				_ = db.Close()
 			}
 
-			// Optionally create an empty file to simulate existing database
+			// Optionally create an empty file to simulate an existing database
 			if tc.preCreateDB {
 				if err := os.WriteFile("fingo.db", nil, 0o644); err != nil {
 					t.Fatalf("setup: could not create dummy fingo.db: %v", err)
 				}
 			}
 
-			// Clean up after subtest
+			// Clean up after the subtest
 			defer func() { _ = os.Remove("fingo.db") }()
 
-			// If we pre-created the DB file, exercise CheckAndCreate and GetDatabaseConnection
+			// If the database file was pre-created, test CheckAndCreate and GetDatabaseConnection
 			if tc.preCreateDB {
 				if err := CheckAndCreate(); err != nil {
 					t.Fatalf("CheckAndCreate() error = %v", err)
@@ -68,7 +68,7 @@ func TestDatabaseLifecycle(t *testing.T) {
 				return
 			}
 
-			// Otherwise test createDatabase behavior (success or expected failure)
+			// Otherwise, test the behavior of createDatabase (success or expected failure)
 			err := createDatabase()
 			if (err != nil) != tc.wantCreateError {
 				t.Fatalf("createDatabase() error = %v, wantError = %v", err, tc.wantCreateError)

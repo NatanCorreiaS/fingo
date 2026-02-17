@@ -1,6 +1,7 @@
 package dbsqlite
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -9,18 +10,15 @@ import (
 	"natan/fingo/utils"
 )
 
-// Tests for goals CRUD operations using table-driven style.
-// Relies on setupDB helper defined in users_sqlite_test.go.
-
 func TestGoals_TableDriven(t *testing.T) {
 	tests := []struct {
 		name   string
-		testFn func(t *testing.T, db *sql.DB, userID int64)
+		testFn func(t *testing.T, ctx context.Context, db *sql.DB, userID int64)
 	}{
 		{
 			name: "GetAllGoals on empty DB returns zero",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				goals, err := GetAllGoals(db)
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				goals, err := GetAllGoals(ctx, db)
 				if err != nil {
 					t.Fatalf("GetAllGoals() returned unexpected error: %v", err)
 				}
@@ -31,17 +29,17 @@ func TestGoals_TableDriven(t *testing.T) {
 		},
 		{
 			name: "CreateGoal inserts and GetAllGoals returns it",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{
 					Name:     "Vacation",
 					Desc:     "Trip to the beach",
-					Price:    utils.Money(150000), // 1500.00
+					Price:    utils.Money(150000),
 					Pros:     "relaxing",
 					Cons:     "costly",
 					UserID:   userID,
 					Deadline: "2026-12-31",
 				}
-				ret, err := CreateGoal(g, db)
+				ret, err := CreateGoal(ctx, g, db)
 				if err != nil {
 					t.Fatalf("CreateGoal() returned error: %v", err)
 				}
@@ -52,7 +50,7 @@ func TestGoals_TableDriven(t *testing.T) {
 					t.Fatalf("expected inserted goal to have non-zero ID")
 				}
 
-				all, err := GetAllGoals(db)
+				all, err := GetAllGoals(ctx, db)
 				if err != nil {
 					t.Fatalf("GetAllGoals() returned error after insert: %v", err)
 				}
@@ -63,7 +61,7 @@ func TestGoals_TableDriven(t *testing.T) {
 		},
 		{
 			name: "CreateGoal accepts description with apostrophe",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{
 					Name:     "Book",
 					Desc:     "O'Reilly special edition",
@@ -73,11 +71,11 @@ func TestGoals_TableDriven(t *testing.T) {
 					UserID:   userID,
 					Deadline: "2026-06-01",
 				}
-				ret, err := CreateGoal(g, db)
+				ret, err := CreateGoal(ctx, g, db)
 				if err != nil {
 					t.Fatalf("CreateGoal() returned error for apostrophe: %v", err)
 				}
-				got, err := GetGoalByID(ret.ID, db)
+				got, err := GetGoalByID(ctx, ret.ID, db)
 				if err != nil {
 					t.Fatalf("GetGoalByID() returned error for inserted goal: %v", err)
 				}
@@ -88,8 +86,8 @@ func TestGoals_TableDriven(t *testing.T) {
 		},
 		{
 			name: "GetGoalByID returns ErrNoRows for non-existent id",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				_, err := GetGoalByID(999999, db)
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				_, err := GetGoalByID(ctx, 999999, db)
 				if err == nil {
 					t.Fatalf("expected error when fetching non-existent goal, got nil")
 				}
@@ -100,7 +98,7 @@ func TestGoals_TableDriven(t *testing.T) {
 		},
 		{
 			name: "GetGoalByID returns inserted goal",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{
 					Name:     "Laptop",
 					Desc:     "Work laptop",
@@ -110,11 +108,11 @@ func TestGoals_TableDriven(t *testing.T) {
 					UserID:   userID,
 					Deadline: "2026-09-30",
 				}
-				ret, err := CreateGoal(g, db)
+				ret, err := CreateGoal(ctx, g, db)
 				if err != nil {
 					t.Fatalf("CreateGoal() returned error: %v", err)
 				}
-				got, err := GetGoalByID(ret.ID, db)
+				got, err := GetGoalByID(ctx, ret.ID, db)
 				if err != nil {
 					t.Fatalf("GetGoalByID() returned error: %v", err)
 				}
@@ -127,8 +125,8 @@ func TestGoals_TableDriven(t *testing.T) {
 			},
 		},
 		{
-			name: "UpdateGoalById updates fields and returns updated record",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			name: "UpdateGoalPartialByID updates only provided fields",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{
 					Name:     "Camera",
 					Desc:     "Old camera",
@@ -138,49 +136,110 @@ func TestGoals_TableDriven(t *testing.T) {
 					UserID:   userID,
 					Deadline: "2026-04-01",
 				}
-				created, err := CreateGoal(g, db)
+				created, err := CreateGoal(ctx, g, db)
 				if err != nil {
 					t.Fatalf("CreateGoal() returned error: %v", err)
 				}
 
-				updated := model.Goal{
-					Name:     "Camera Pro",
-					Desc:     "Upgraded model",
-					Price:    utils.Money(120000),
-					Pros:     "high-res",
-					Cons:     "expensive",
-					UserID:   userID,
-					Deadline: "2026-12-01",
+				newName := "Camera Pro"
+				update := &model.GoalUpdate{
+					Name: &newName,
 				}
 
-				got, err := UpdateGoalById(created.ID, updated, db)
+				got, err := UpdateGoalPartialByID(ctx, created.ID, update, db)
 				if err != nil {
-					t.Fatalf("UpdateGoalById() returned error: %v", err)
+					t.Fatalf("UpdateGoalPartialByID() returned error: %v", err)
 				}
 				if got.ID != created.ID {
 					t.Errorf("id changed after update: expected %d, got %d", created.ID, got.ID)
 				}
-				if got.Name != updated.Name {
-					t.Errorf("name not updated: expected %q, got %q", updated.Name, got.Name)
+				if got.Name != newName {
+					t.Errorf("name not updated: expected %q, got %q", newName, got.Name)
 				}
-				if got.Price != updated.Price {
-					t.Errorf("price not updated: expected %v, got %v", updated.Price, got.Price)
+				if got.Desc != g.Desc {
+					t.Errorf("description should not change: expected %q, got %q", g.Desc, got.Desc)
 				}
 			},
 		},
 		{
-			name: "UpdateGoalById returns ErrNoRows for non-existent id",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				updated := model.Goal{
-					Name:     "NonExistent",
-					Desc:     "",
-					Price:    utils.Money(0),
-					Pros:     "",
-					Cons:     "",
+			name: "UpdateGoalPartialByID updates multiple fields",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				g := model.Goal{
+					Name:     "Phone",
+					Desc:     "Old phone",
+					Price:    utils.Money(50000),
+					Pros:     "works",
+					Cons:     "slow",
 					UserID:   userID,
-					Deadline: "2026-01-01",
+					Deadline: "2026-03-01",
 				}
-				_, err := UpdateGoalById(999999, updated, db)
+				created, err := CreateGoal(ctx, g, db)
+				if err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+
+				newName := "Phone Pro"
+				newPrice := utils.Money(120000)
+				update := &model.GoalUpdate{
+					Name:  &newName,
+					Price: &newPrice,
+				}
+
+				got, err := UpdateGoalPartialByID(ctx, created.ID, update, db)
+				if err != nil {
+					t.Fatalf("UpdateGoalPartialByID() returned error: %v", err)
+				}
+				if got.Name != newName {
+					t.Errorf("name not updated: expected %q, got %q", newName, got.Name)
+				}
+				if got.Price != newPrice {
+					t.Errorf("price not updated: expected %v, got %v", newPrice, got.Price)
+				}
+				if got.Desc != g.Desc {
+					t.Errorf("description should not change: expected %q, got %q", g.Desc, got.Desc)
+				}
+			},
+		},
+		{
+			name: "UpdateGoalPartialByID with no fields returns goal unchanged",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				g := model.Goal{
+					Name:     "Tablet",
+					Desc:     "New tablet",
+					Price:    utils.Money(60000),
+					Pros:     "portable",
+					Cons:     "expensive",
+					UserID:   userID,
+					Deadline: "2026-05-15",
+				}
+				created, err := CreateGoal(ctx, g, db)
+				if err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+
+				update := &model.GoalUpdate{}
+
+				got, err := UpdateGoalPartialByID(ctx, created.ID, update, db)
+				if err != nil {
+					t.Fatalf("UpdateGoalPartialByID() returned error: %v", err)
+				}
+
+				if got.Name != g.Name {
+					t.Errorf("name changed unexpectedly: expected %q, got %q", g.Name, got.Name)
+				}
+				if got.Price != g.Price {
+					t.Errorf("price changed unexpectedly: expected %v, got %v", g.Price, got.Price)
+				}
+			},
+		},
+		{
+			name: "UpdateGoalPartialByID returns ErrNoRows for non-existent id",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				newName := "NonExistent"
+				update := &model.GoalUpdate{
+					Name: &newName,
+				}
+				_, err := UpdateGoalPartialByID(ctx, 999999, update, db)
 				if err == nil {
 					t.Fatalf("expected error when updating non-existent goal, got nil")
 				}
@@ -191,7 +250,7 @@ func TestGoals_TableDriven(t *testing.T) {
 		},
 		{
 			name: "DeleteGoalByID deletes existing goal and subsequent GetGoalByID returns ErrNoRows",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{
 					Name:     "To Delete",
 					Desc:     "temporary",
@@ -201,18 +260,18 @@ func TestGoals_TableDriven(t *testing.T) {
 					UserID:   userID,
 					Deadline: "2026-02-02",
 				}
-				created, err := CreateGoal(g, db)
+				created, err := CreateGoal(ctx, g, db)
 				if err != nil {
 					t.Fatalf("CreateGoal() returned error: %v", err)
 				}
-				deleted, err := DeleteGoalByID(created.ID, db)
+				deleted, err := DeleteGoalByID(ctx, created.ID, db)
 				if err != nil {
 					t.Fatalf("DeleteGoalByID() returned error: %v", err)
 				}
 				if deleted != 1 {
 					t.Fatalf("expected 1 row deleted, got %d", deleted)
 				}
-				_, err = GetGoalByID(created.ID, db)
+				_, err = GetGoalByID(ctx, created.ID, db)
 				if err == nil {
 					t.Fatalf("expected error when fetching deleted goal, got nil")
 				}
@@ -224,24 +283,24 @@ func TestGoals_TableDriven(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc // capture range variable
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			db, teardown := setupDB(t)
 			defer teardown()
+			ctx := context.Background()
 
-			// create a user to satisfy foreign key constraint
 			u := model.User{
 				UserName:       "goal-user",
 				CurrentAmount:  utils.Money(0),
 				MonthlyInputs:  utils.Money(0),
 				MonthlyOutputs: utils.Money(0),
 			}
-			uRet, err := CreateUser(u, db)
+			uRet, err := CreateUser(ctx, u, db)
 			if err != nil {
 				t.Fatalf("failed to create user for goals tests: %v", err)
 			}
 
-			tc.testFn(t, db, uRet.ID)
+			tc.testFn(t, ctx, db, uRet.ID)
 		})
 	}
 }

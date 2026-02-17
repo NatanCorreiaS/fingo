@@ -1,6 +1,7 @@
 package dbsqlite
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"testing"
@@ -15,12 +16,12 @@ import (
 func TestTransactions_TableDriven(t *testing.T) {
 	tests := []struct {
 		name   string
-		testFn func(t *testing.T, db *sql.DB, userID int64)
+		testFn func(t *testing.T, ctx context.Context, db *sql.DB, userID int64)
 	}{
 		{
 			name: "GetAllTransactions on empty DB returns zero",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				txns, err := GetAllTransactions(db)
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				txns, err := GetAllTransactions(ctx, db)
 				if err != nil {
 					t.Fatalf("GetAllTransactions() returned unexpected error: %v", err)
 				}
@@ -31,14 +32,14 @@ func TestTransactions_TableDriven(t *testing.T) {
 		},
 		{
 			name: "CreateTransaction inserts and GetAllTransactions returns it",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
 					Desc:   "Salary",
-					Amount: utils.Money(500000), // 5000.00
+					Amount: utils.Money(500000),
 					IsDebt: false,
 					UserID: userID,
 				}
-				ret, err := CreateTransaction(tr, db)
+				ret, err := CreateTransaction(ctx, tr, db)
 				if err != nil {
 					t.Fatalf("CreateTransaction() returned error: %v", err)
 				}
@@ -49,7 +50,7 @@ func TestTransactions_TableDriven(t *testing.T) {
 					t.Fatalf("expected inserted transaction to have non-zero ID")
 				}
 
-				list, err := GetAllTransactions(db)
+				list, err := GetAllTransactions(ctx, db)
 				if err != nil {
 					t.Fatalf("GetAllTransactions() returned error after insert: %v", err)
 				}
@@ -60,18 +61,18 @@ func TestTransactions_TableDriven(t *testing.T) {
 		},
 		{
 			name: "CreateTransaction accepts description with apostrophe",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
 					Desc:   "O'Reilly bonus",
 					Amount: utils.Money(12345),
 					IsDebt: false,
 					UserID: userID,
 				}
-				ret, err := CreateTransaction(tr, db)
+				ret, err := CreateTransaction(ctx, tr, db)
 				if err != nil {
 					t.Fatalf("CreateTransaction() error for apostrophe: %v", err)
 				}
-				got, err := GetTransactionByID(ret.ID, db)
+				got, err := GetTransactionByID(ctx, ret.ID, db)
 				if err != nil {
 					t.Fatalf("GetTransactionByID() returned error for inserted transaction: %v", err)
 				}
@@ -82,8 +83,8 @@ func TestTransactions_TableDriven(t *testing.T) {
 		},
 		{
 			name: "GetTransactionByID returns ErrNoRows for non-existent id",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				_, err := GetTransactionByID(999999, db)
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				_, err := GetTransactionByID(ctx, 999999, db)
 				if err == nil {
 					t.Fatalf("expected error when fetching non-existent transaction, got nil")
 				}
@@ -94,18 +95,18 @@ func TestTransactions_TableDriven(t *testing.T) {
 		},
 		{
 			name: "GetTransactionByID returns inserted transaction",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
 					Desc:   "Groceries",
 					Amount: utils.Money(2500),
 					IsDebt: false,
 					UserID: userID,
 				}
-				ret, err := CreateTransaction(tr, db)
+				ret, err := CreateTransaction(ctx, tr, db)
 				if err != nil {
 					t.Fatalf("CreateTransaction() returned error: %v", err)
 				}
-				got, err := GetTransactionByID(ret.ID, db)
+				got, err := GetTransactionByID(ctx, ret.ID, db)
 				if err != nil {
 					t.Fatalf("GetTransactionByID() returned error: %v", err)
 				}
@@ -118,54 +119,118 @@ func TestTransactions_TableDriven(t *testing.T) {
 			},
 		},
 		{
-			name: "UpdateTransactionByID updates fields and returns updated record",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			name: "UpdateTransactionPartialByID updates only provided fields",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
 					Desc:   "Old Desc",
 					Amount: utils.Money(1000),
 					IsDebt: true,
 					UserID: userID,
 				}
-				created, err := CreateTransaction(tr, db)
+				created, err := CreateTransaction(ctx, tr, db)
 				if err != nil {
 					t.Fatalf("CreateTransaction() returned error: %v", err)
 				}
 
-				updated := model.Transaction{
-					Desc:   "New Desc",
-					Amount: utils.Money(2000),
-					IsDebt: false,
-					UserID: userID,
+				newDesc := "New Desc"
+				update := &model.TransactionUpdate{
+					Desc: &newDesc,
 				}
 
-				got, err := UpdateTransactionByID(created.ID, &updated, db)
+				got, err := UpdateTransactionPartialByID(ctx, created.ID, update, db)
 				if err != nil {
-					t.Fatalf("UpdateTransactionByID() returned error: %v", err)
+					t.Fatalf("UpdateTransactionPartialByID() returned error: %v", err)
 				}
 				if got.ID != created.ID {
 					t.Errorf("id changed after update: expected %d, got %d", created.ID, got.ID)
 				}
-				if got.Desc != updated.Desc {
-					t.Errorf("description not updated: expected %q, got %q", updated.Desc, got.Desc)
+				if got.Desc != newDesc {
+					t.Errorf("description not updated: expected %q, got %q", newDesc, got.Desc)
 				}
-				if got.Amount != updated.Amount {
-					t.Errorf("amount not updated: expected %v, got %v", updated.Amount, got.Amount)
+				// Verify non-updated fields remain unchanged
+				if got.Amount != tr.Amount {
+					t.Errorf("amount should not change: expected %v, got %v", tr.Amount, got.Amount)
 				}
-				if got.IsDebt != updated.IsDebt {
-					t.Errorf("is_debt not updated: expected %v, got %v", updated.IsDebt, got.IsDebt)
+				if got.IsDebt != tr.IsDebt {
+					t.Errorf("is_debt should not change: expected %v, got %v", tr.IsDebt, got.IsDebt)
 				}
 			},
 		},
 		{
-			name: "UpdateTransactionByID returns ErrNoRows for non-existent id",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
-				updated := model.Transaction{
-					Desc:   "Doesn't matter",
-					Amount: utils.Money(0),
+			name: "UpdateTransactionPartialByID updates multiple fields",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				tr := model.Transaction{
+					Desc:   "Initial",
+					Amount: utils.Money(1000),
+					IsDebt: true,
+					UserID: userID,
+				}
+				created, err := CreateTransaction(ctx, tr, db)
+				if err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+
+				newDesc := "Updated"
+				newAmount := utils.Money(2000)
+				update := &model.TransactionUpdate{
+					Desc:   &newDesc,
+					Amount: &newAmount,
+				}
+
+				got, err := UpdateTransactionPartialByID(ctx, created.ID, update, db)
+				if err != nil {
+					t.Fatalf("UpdateTransactionPartialByID() returned error: %v", err)
+				}
+				if got.Desc != newDesc {
+					t.Errorf("description not updated: expected %q, got %q", newDesc, got.Desc)
+				}
+				if got.Amount != newAmount {
+					t.Errorf("amount not updated: expected %v, got %v", newAmount, got.Amount)
+				}
+				if got.IsDebt != tr.IsDebt {
+					t.Errorf("is_debt should not change: expected %v, got %v", tr.IsDebt, got.IsDebt)
+				}
+			},
+		},
+		{
+			name: "UpdateTransactionPartialByID with no fields returns transaction unchanged",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				tr := model.Transaction{
+					Desc:   "Original",
+					Amount: utils.Money(5000),
 					IsDebt: false,
 					UserID: userID,
 				}
-				_, err := UpdateTransactionByID(999999, &updated, db)
+				created, err := CreateTransaction(ctx, tr, db)
+				if err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+
+				update := &model.TransactionUpdate{}
+				got, err := UpdateTransactionPartialByID(ctx, created.ID, update, db)
+				if err != nil {
+					t.Fatalf("UpdateTransactionPartialByID() returned error: %v", err)
+				}
+
+				if got.Desc != tr.Desc {
+					t.Errorf("description changed unexpectedly: expected %q, got %q", tr.Desc, got.Desc)
+				}
+				if got.Amount != tr.Amount {
+					t.Errorf("amount changed unexpectedly: expected %v, got %v", tr.Amount, got.Amount)
+				}
+				if got.IsDebt != tr.IsDebt {
+					t.Errorf("is_debt changed unexpectedly: expected %v, got %v", tr.IsDebt, got.IsDebt)
+				}
+			},
+		},
+		{
+			name: "UpdateTransactionPartialByID returns ErrNoRows for non-existent id",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				newDesc := "Ghost"
+				update := &model.TransactionUpdate{
+					Desc: &newDesc,
+				}
+				_, err := UpdateTransactionPartialByID(ctx, 999999, update, db)
 				if err == nil {
 					t.Fatalf("expected error when updating non-existent transaction, got nil")
 				}
@@ -176,25 +241,25 @@ func TestTransactions_TableDriven(t *testing.T) {
 		},
 		{
 			name: "DeleteTransactionByID deletes existing transaction and subsequent GetTransactionByID returns ErrNoRows",
-			testFn: func(t *testing.T, db *sql.DB, userID int64) {
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
 					Desc:   "To be deleted",
 					Amount: utils.Money(777),
 					IsDebt: true,
 					UserID: userID,
 				}
-				created, err := CreateTransaction(tr, db)
+				created, err := CreateTransaction(ctx, tr, db)
 				if err != nil {
 					t.Fatalf("CreateTransaction() returned error: %v", err)
 				}
-				deleted, err := DeleteTransactionByID(created.ID, db)
+				deleted, err := DeleteTransactionByID(ctx, created.ID, db)
 				if err != nil {
 					t.Fatalf("DeleteTransactionByID() returned error: %v", err)
 				}
 				if deleted != 1 {
 					t.Fatalf("expected 1 row deleted, got %d", deleted)
 				}
-				_, err = GetTransactionByID(created.ID, db)
+				_, err = GetTransactionByID(ctx, created.ID, db)
 				if err == nil {
 					t.Fatalf("expected error when fetching deleted transaction, got nil")
 				}
@@ -206,24 +271,24 @@ func TestTransactions_TableDriven(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc // capture range var
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			db, teardown := setupDB(t)
 			defer teardown()
+			ctx := context.Background()
 
-			// create a user to satisfy the foreign key constraint
 			user := model.User{
 				UserName:       "tx-user",
 				CurrentAmount:  utils.Money(0),
 				MonthlyInputs:  utils.Money(0),
 				MonthlyOutputs: utils.Money(0),
 			}
-			uRet, err := CreateUser(user, db)
+			uRet, err := CreateUser(ctx, user, db)
 			if err != nil {
 				t.Fatalf("failed to create user for transactions tests: %v", err)
 			}
 
-			tc.testFn(t, db, uRet.ID)
+			tc.testFn(t, ctx, db, uRet.ID)
 		})
 	}
 }

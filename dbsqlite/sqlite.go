@@ -12,14 +12,14 @@ import (
 	_ "github.com/ncruces/go-sqlite3/embed"
 )
 
-// compiler directive below
+// Compiler directive below
 //
 //go:embed schema.sql
 var schemaSQL string
 
 func CheckAndCreate() error {
 	if _, err := os.Stat("fingo.db"); err == nil {
-		log.Printf("fingo.db already detected! skipping database creation...")
+		log.Printf("fingo.db already detected! Skipping database creation...")
 		return nil
 	}
 
@@ -52,7 +52,7 @@ func createDatabase() error {
 		return fmt.Errorf("Failed to create tables: %v", err)
 	}
 
-	log.Println("Tables created in the database with success...")
+	log.Println("Tables successfully created in the database...")
 	return nil
 
 }
