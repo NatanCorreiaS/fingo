@@ -9,9 +9,9 @@ type Goal struct {
 	Name      string      `json:"name"`
 	Desc      string      `json:"description,omitempty"`
 	Price     utils.Money `json:"price"`
-	Pros      *string     `json:"pros,omitempty"`
-	Cons      *string     `json:"cons,omitempty"`
+	Pros      string      `json:"pros,omitempty"`
+	Cons      string      `json:"cons,omitempty"`
 	UserID    int64       `json:"user_id"`
-	CreatedAt *string     `json:"created_at,omitempty"`
+	CreatedAt string      `json:"created_at,omitempty"`
 	Deadline  string      `json:"deadline"`
 }

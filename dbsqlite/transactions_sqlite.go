@@ -47,7 +47,8 @@ func GetTransactionByID(id int64, db *sql.DB) (*model.Transaction, error) {
 
 	var transaction model.Transaction
 	row := db.QueryRow(selectStmt, id)
-	if err := row.Scan(&transaction.ID, &transaction.Desc, &transaction.Amount, &transaction.CreatedAt, &transaction.IsDebt, &transaction.UserID); err != nil {
+	// Scan must match the SELECT column order: id, description, amount, is_debt, created_at, user_id
+	if err := row.Scan(&transaction.ID, &transaction.Desc, &transaction.Amount, &transaction.IsDebt, &transaction.CreatedAt, &transaction.UserID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("user not found: %w", err)
 		}
