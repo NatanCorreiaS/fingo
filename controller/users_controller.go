@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"natan/fingo/dbsqlite"
 	"natan/fingo/model"
@@ -11,53 +10,58 @@ import (
 	"strconv"
 )
 
-func GetID(idStr string, w http.ResponseWriter, r *http.Request) int64 {
+func writeJSON(w http.ResponseWriter, status int, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		log.Printf("could not encode response: %v", err)
+	}
+}
+
+func GetID(idStr string, w http.ResponseWriter, r *http.Request) (int64, bool) {
 	if idStr == "" {
 		log.Println("could not get id in User Handler")
-		http.Error(w, "Empty id!", http.StatusBadRequest)
-		return 0
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "empty id"})
+		return 0, false
 	}
-
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
 		log.Printf("could not convert the path variable to id: %v", err)
-		http.Error(w, "invalid id!", http.StatusBadRequest)
-		return 0
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid id"})
+		return 0, false
 	}
-
-	return id
+	return id, true
 }
 
 func GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
 
-	idStr := r.PathValue("id")
-	id := GetID(idStr, w, r)
-	if id == 0 {
-		return
-	}
-	user, err := service.GetUserByID(ctx, id)
-	if err != nil {
-		log.Println(err)
-		http.Error(w, "invalid id!", http.StatusBadRequest)
+	id, ok := GetID(r.PathValue("id"), w, r)
+	if !ok {
 		return
 	}
 
-	fmt.Fprintf(w, "User: %v", *user)
+	user, err := service.GetUserByID(ctx, id)
+	if err != nil {
+		log.Println(err)
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "user not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
+
 	usersList, err := service.GetAllUsers(ctx)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "Problem to fetch all users", http.StatusInternalServerError)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "problem fetching users"})
 		return
 	}
-
-	fmt.Fprintf(w, "Users: %v", usersList)
+	writeJSON(w, http.StatusOK, usersList)
 }
 
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,63 +71,58 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		log.Printf("could not decode request body: %v", err)
-		http.Error(w, "invalid body!", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid body"})
 		return
 	}
 
 	userRec, err := service.CreateUser(ctx, user)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "error when creating user!", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "error when creating user"})
 		return
 	}
-
-	fmt.Fprintf(w, "User created: %v", *userRec)
+	writeJSON(w, http.StatusCreated, userRec)
 }
 
 func UpdateUserByID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
 
+	id, ok := GetID(r.PathValue("id"), w, r)
+	if !ok {
+		return
+	}
+
 	var userUpdate *model.UserUpdate
-
-	idStr := r.PathValue("id")
-	id := GetID(idStr, w, r)
-
 	if err := json.NewDecoder(r.Body).Decode(&userUpdate); err != nil {
-
 		log.Printf("could not decode request body: %v", err)
-		http.Error(w, "invalid body!", http.StatusBadRequest)
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid body"})
 		return
 	}
 
 	user, err := service.UpdateUserByID(ctx, id, userUpdate)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "Error when updating user!", http.StatusInternalServerError)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "error when updating user"})
 		return
 	}
-
-	fmt.Fprintf(w, "User updated: %v", *user)
+	writeJSON(w, http.StatusOK, user)
 }
 
 func DeleteUserByID(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
 
-	idStr := r.PathValue("id")
-	id := GetID(idStr, w, r)
-
-	if id == 0 {
+	id, ok := GetID(r.PathValue("id"), w, r)
+	if !ok {
 		return
 	}
 
 	rows, err := service.DeleteUserByID(ctx, id)
 	if err != nil {
 		log.Println(err)
-		http.Error(w, "Error when deleting user!", http.StatusInternalServerError)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "error when deleting user"})
 		return
 	}
-
-	fmt.Fprintf(w, "Deleted, rows affected: %v", rows)
+	writeJSON(w, http.StatusOK, map[string]int64{"rows_affected": rows})
 }
