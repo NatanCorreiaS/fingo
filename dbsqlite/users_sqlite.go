@@ -81,12 +81,12 @@ func DeleteUserByID(ctx context.Context, id int64, db *sql.DB) (int64, error) {
 		return 0, fmt.Errorf("could not execute the delete query for user: %w", err)
 	}
 
-	deleted, err := res.RowsAffected()
+	rows, err := res.RowsAffected()
 	if err != nil {
 		return 0, fmt.Errorf("could not get rows affected for delete: %w", err)
 	}
 
-	return deleted, nil
+	return rows, nil
 }
 
 // UpdateUserPartialByID updates a user by ID with partial user data.

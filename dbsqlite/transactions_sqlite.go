@@ -75,12 +75,12 @@ func DeleteTransactionByID(ctx context.Context, id int64, db *sql.DB) (int64, er
 		return 0, fmt.Errorf("could not execute the delete query for transaction: %w", err)
 	}
 
-	deleted, err := res.RowsAffected()
+	rows, err := res.RowsAffected()
 	if err != nil {
 		return 0, fmt.Errorf("could not get rows affected for delete: %w", err)
 	}
 
-	return deleted, nil
+	return rows, nil
 }
 
 // UpdateTransactionPartialByID updates a transaction by its ID with only the provided fields

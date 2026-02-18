@@ -77,12 +77,12 @@ func DeleteGoalByID(ctx context.Context, id int64, db *sql.DB) (int64, error) {
 		return 0, fmt.Errorf("could not execute delete query for goal: %w", err)
 	}
 
-	deleted, err := res.RowsAffected()
+	rows, err := res.RowsAffected()
 	if err != nil {
 		return 0, fmt.Errorf("could not get affected rows for delete: %w", err)
 	}
 
-	return deleted, nil
+	return rows, nil
 }
 
 // Updates a goal by its ID with only the provided fields.

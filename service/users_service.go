@@ -61,12 +61,12 @@ func DeleteUserByID(ctx context.Context, id int64) (int64, error) {
 
 	defer db.Close()
 
-	deleted, err := dbsqlite.DeleteUserByID(ctx, id, db)
+	rows, err := dbsqlite.DeleteUserByID(ctx, id, db)
 	if err != nil {
-		return deleted, err
+		return rows, err
 	}
 
-	return deleted, nil
+	return rows, nil
 }
 
 func UpdateUserByID(ctx context.Context, id int64, user *model.UserUpdate) (*model.User, error) {
