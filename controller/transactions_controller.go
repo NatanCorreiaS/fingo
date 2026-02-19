@@ -75,7 +75,7 @@ func UpdateTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(transactionUpdate); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&transactionUpdate); err != nil {
 		log.Printf("could not decode request body: %v", err)
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid body"})
 		return
