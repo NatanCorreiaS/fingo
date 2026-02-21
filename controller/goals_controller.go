@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// GetGoalByIDHandler handles GET /goals/{id} and returns the goal with the given ID.
 func GetGoalByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -29,6 +30,7 @@ func GetGoalByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *goal)
 }
 
+// GetAllGoalsHandler handles GET /goals and returns all goals.
 func GetAllGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -43,6 +45,7 @@ func GetAllGoalsHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, goalsList)
 }
 
+// CreateGoalHandler handles POST /goals and creates a new goal from the request body.
 func CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -62,6 +65,7 @@ func CreateGoalHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, *goalRec)
 }
 
+// UpdateGoalByIDHandler handles PATCH /goals/{id} and applies a partial update to the given goal.
 func UpdateGoalByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -88,6 +92,7 @@ func UpdateGoalByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *goal)
 }
 
+// DeleteGoalByIDHandler handles DELETE /goals/{id} and removes the goal with the given ID.
 func DeleteGoalByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()

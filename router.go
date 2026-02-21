@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// Route groups an HTTP method, path pattern, and handler function.
 type Route struct {
 	Method  string
 	Path    string
@@ -35,12 +36,14 @@ var GoalRoutes = []Route{
 	{"DELETE", "/goals/{id}", controller.DeleteGoalByIDHandler},
 }
 
+// registerRoutes registers a slice of routes on the given ServeMux.
 func registerRoutes(mux *http.ServeMux, routes []Route) {
 	for _, route := range routes {
 		mux.HandleFunc(route.Method+" "+route.Path, route.Handler)
 	}
 }
 
+// RouterMux builds and returns the application ServeMux with all routes registered.
 func RouterMux() *http.ServeMux {
 	mux := http.NewServeMux()
 	registerRoutes(mux, UserRoutes)

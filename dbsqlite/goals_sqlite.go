@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Retrieves all goals from the database with context support
+// GetAllGoals retrieves all goals from the database.
 func GetAllGoals(ctx context.Context, db *sql.DB) ([]model.Goal, error) {
 	const query = "SELECT id, name, description, price, pros, cons, user_id, created_at, deadline FROM goals"
 
@@ -36,7 +36,7 @@ func GetAllGoals(ctx context.Context, db *sql.DB) ([]model.Goal, error) {
 	return goalsList, nil
 }
 
-// Retrieves a goal by its ID with context support
+// GetGoalByID retrieves a single goal by its ID.
 func GetGoalByID(ctx context.Context, id int64, db *sql.DB) (*model.Goal, error) {
 	const selectStmt = "SELECT id, name, description, price, pros, cons, user_id, created_at, deadline FROM goals WHERE id = ?"
 
@@ -52,7 +52,7 @@ func GetGoalByID(ctx context.Context, id int64, db *sql.DB) (*model.Goal, error)
 	return &goal, nil
 }
 
-// Inserts a new goal into the database with context support
+// CreateGoal inserts a new goal into the database and returns it with the generated ID.
 func CreateGoal(ctx context.Context, goal model.Goal, db *sql.DB) (*model.Goal, error) {
 	const createStmt = "INSERT INTO goals(name, description, price, pros, cons, user_id, deadline)VALUES(?,?,?,?,?,?,?)"
 
@@ -68,7 +68,7 @@ func CreateGoal(ctx context.Context, goal model.Goal, db *sql.DB) (*model.Goal, 
 	return &goal, nil
 }
 
-// Deletes a goal by its ID with context support
+// DeleteGoalByID removes a goal by its ID and returns the number of affected rows.
 func DeleteGoalByID(ctx context.Context, id int64, db *sql.DB) (int64, error) {
 	const deleteStmt = "DELETE FROM goals WHERE id = ?"
 
@@ -85,20 +85,18 @@ func DeleteGoalByID(ctx context.Context, id int64, db *sql.DB) (int64, error) {
 	return rows, nil
 }
 
-// Updates a goal by its ID with only the provided fields.
-// Fields not provided (nil) remain unchanged, preserving existing values.
+// UpdateGoalPartialByID applies a partial update to a goal by its ID.
+// Only non-nil fields in GoalUpdate are written; existing values are preserved for nil fields.
 func UpdateGoalPartialByID(ctx context.Context, id int64, update *model.GoalUpdate, db *sql.DB) (*model.Goal, error) {
 	if update == nil {
 		return nil, fmt.Errorf("update data cannot be nil")
 	}
 
-	// Verify that the goal exists
 	_, err := GetGoalByID(ctx, id, db)
 	if err != nil {
 		return nil, err
 	}
 
-	// Build dynamic UPDATE statement with only provided fields
 	var setParts []string
 	var args []interface{}
 
@@ -132,12 +130,10 @@ func UpdateGoalPartialByID(ctx context.Context, id int64, update *model.GoalUpda
 		args = append(args, *update.Deadline)
 	}
 
-	// If no fields are provided for update, return the current goal as-is
 	if len(setParts) == 0 {
 		return GetGoalByID(ctx, id, db)
 	}
 
-	// Construct and execute the dynamic UPDATE statement
 	updateStmt := fmt.Sprintf("UPDATE goals SET %s WHERE id = ?", strings.Join(setParts, ", "))
 	args = append(args, id)
 
@@ -155,6 +151,5 @@ func UpdateGoalPartialByID(ctx context.Context, id int64, update *model.GoalUpda
 		return nil, sql.ErrNoRows
 	}
 
-	// Retrieve and return the updated goal
 	return GetGoalByID(ctx, id, db)
 }

@@ -6,6 +6,7 @@ import (
 	"natan/fingo/model"
 )
 
+// CreateUser persists a new user and returns the created record.
 func CreateUser(ctx context.Context, user model.User) (*model.User, error) {
 	db, err := dbsqlite.GetDatabaseConnection()
 	if err != nil {
@@ -21,12 +22,12 @@ func CreateUser(ctx context.Context, user model.User) (*model.User, error) {
 	return u, nil
 }
 
+// GetUserByID returns the user with the given ID.
 func GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	db, err := dbsqlite.GetDatabaseConnection()
 	if err != nil {
 		return nil, err
 	}
-
 	defer db.Close()
 
 	u, err := dbsqlite.GetUserByID(ctx, id, db)
@@ -37,12 +38,12 @@ func GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	return u, nil
 }
 
+// GetAllUsers returns all users in the database.
 func GetAllUsers(ctx context.Context) ([]model.User, error) {
 	db, err := dbsqlite.GetDatabaseConnection()
 	if err != nil {
 		return nil, err
 	}
-
 	defer db.Close()
 
 	users, err := dbsqlite.GetAllUsers(ctx, db)
@@ -53,12 +54,12 @@ func GetAllUsers(ctx context.Context) ([]model.User, error) {
 	return users, nil
 }
 
+// DeleteUserByID removes the user with the given ID and returns the number of affected rows.
 func DeleteUserByID(ctx context.Context, id int64) (int64, error) {
 	db, err := dbsqlite.GetDatabaseConnection()
 	if err != nil {
 		return 0, err
 	}
-
 	defer db.Close()
 
 	rows, err := dbsqlite.DeleteUserByID(ctx, id, db)
@@ -69,18 +70,18 @@ func DeleteUserByID(ctx context.Context, id int64) (int64, error) {
 	return rows, nil
 }
 
+// UpdateUserByID applies a partial update to the user with the given ID and returns the updated record.
 func UpdateUserByID(ctx context.Context, id int64, user *model.UserUpdate) (*model.User, error) {
 	db, err := dbsqlite.GetDatabaseConnection()
 	if err != nil {
 		return nil, err
 	}
-
 	defer db.Close()
-	
+
 	u, err := dbsqlite.UpdateUserPartialByID(ctx, id, user, db)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	
+
 	return u, nil
 }

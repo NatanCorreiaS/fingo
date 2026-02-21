@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// writeJSON writes a JSON-encoded response with the given status code.
 func writeJSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -15,6 +16,8 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 	}
 }
 
+// GetID parses and returns the ID path variable as int64.
+// Writes a 400 response and returns false if the value is missing or not a valid integer.
 func GetID(idStr string, w http.ResponseWriter, r *http.Request) (int64, bool) {
 	if idStr == "" {
 		log.Println("could not get id in the URI")

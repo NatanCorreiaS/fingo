@@ -4,10 +4,9 @@ import (
 	"testing"
 
 	"natan/fingo/model"
+	"natan/fingo/utils"
 )
 
-// createTransactionForTests creates a basic transaction using the service layer.
-// It creates a user first to satisfy the foreign key constraint.
 func createTransactionForTests(t *testing.T) *model.Transaction {
 	t.Helper()
 
@@ -84,7 +83,6 @@ func TestGetTransactionByID(t *testing.T) {
 }
 
 func TestGetAllTransactions(t *testing.T) {
-	// Ensure at least one transaction exists
 	_ = createTransactionForTests(t)
 
 	tests := []struct {
@@ -112,7 +110,6 @@ func TestGetAllTransactions(t *testing.T) {
 }
 
 func TestCreateTransaction(t *testing.T) {
-	// Create user once for all subtests
 	user, err := CreateUser(ctxTest, model.User{
 		UserName: "tx-create-service",
 	})
@@ -238,30 +235,65 @@ func TestUpdateTransactionByID(t *testing.T) {
 }
 
 func TestDeleteTransactionByID(t *testing.T) {
-	base := createTransactionForTests(t)
-
 	tests := []struct {
-		name     string
-		id       int64
-		wantErr  bool
-		wantRows int64
+		name                string
+		setupFn             func(t *testing.T) (txID int64, userID int64, initialBalance utils.Money)
+		wantErr             bool
+		wantRows            int64
+		wantBalanceReverted bool
 	}{
 		{
-			name:     "delete_existing_transaction",
-			id:       base.ID,
-			wantErr:  false,
-			wantRows: 1,
+			name: "delete_credit_reverts_balance",
+			setupFn: func(t *testing.T) (int64, int64, utils.Money) {
+				t.Helper()
+				const initial utils.Money = 1000
+				user, err := CreateUser(ctxTest, model.User{UserName: "del-credit", CurrentAmount: initial})
+				if err != nil {
+					t.Fatalf("setup: create user: %v", err)
+				}
+				tx, err := CreateTransaction(ctxTest, model.Transaction{
+					Desc: "credit tx", Amount: 500, IsDebt: false, UserID: user.ID,
+				})
+				if err != nil {
+					t.Fatalf("setup: create transaction: %v", err)
+				}
+				return tx.ID, user.ID, initial
+			},
+			wantRows:            1,
+			wantBalanceReverted: true,
 		},
 		{
-			name:     "delete_non_existing_transaction",
-			id:       base.ID + 999999,
-			wantErr:  false,
+			name: "delete_debt_reverts_balance",
+			setupFn: func(t *testing.T) (int64, int64, utils.Money) {
+				t.Helper()
+				const initial utils.Money = 1000
+				user, err := CreateUser(ctxTest, model.User{UserName: "del-debt", CurrentAmount: initial})
+				if err != nil {
+					t.Fatalf("setup: create user: %v", err)
+				}
+				tx, err := CreateTransaction(ctxTest, model.Transaction{
+					Desc: "debt tx", Amount: 300, IsDebt: true, UserID: user.ID,
+				})
+				if err != nil {
+					t.Fatalf("setup: create transaction: %v", err)
+				}
+				return tx.ID, user.ID, initial
+			},
+			wantRows:            1,
+			wantBalanceReverted: true,
+		},
+		{
+			name: "delete_non_existing_transaction",
+			setupFn: func(t *testing.T) (int64, int64, utils.Money) {
+				return 999999999, 0, 0
+			},
 			wantRows: 0,
 		},
 		{
-			name:     "delete_zero_id",
-			id:       0,
-			wantErr:  false,
+			name: "delete_zero_id",
+			setupFn: func(t *testing.T) (int64, int64, utils.Money) {
+				return 0, 0, 0
+			},
 			wantRows: 0,
 		},
 	}
@@ -269,7 +301,9 @@ func TestDeleteTransactionByID(t *testing.T) {
 	for _, tc := range tests {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			rows, err := DeleteTransactionByID(ctxTest, tc.id)
+			txID, userID, initialBalance := tc.setupFn(t)
+
+			rows, err := DeleteTransactionByID(ctxTest, txID)
 
 			if tc.wantErr {
 				if err == nil {
@@ -283,6 +317,16 @@ func TestDeleteTransactionByID(t *testing.T) {
 			}
 			if rows != tc.wantRows {
 				t.Errorf("DeleteTransactionByID() rows mismatch: got=%d want=%d", rows, tc.wantRows)
+			}
+
+			if tc.wantBalanceReverted && userID != 0 {
+				user, err := GetUserByID(ctxTest, userID)
+				if err != nil {
+					t.Fatalf("GetUserByID() unexpected error after delete: %v", err)
+				}
+				if user.CurrentAmount != initialBalance {
+					t.Errorf("balance not reverted: got=%d want=%d", user.CurrentAmount, initialBalance)
+				}
 			}
 		})
 	}

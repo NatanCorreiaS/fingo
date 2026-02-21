@@ -17,6 +17,7 @@ import (
 //go:embed schema.sql
 var schemaSQL string
 
+// CheckAndCreate verifies if the database file exists and creates it with the schema if not.
 func CheckAndCreate() error {
 	if _, err := os.Stat("fingo.db"); err == nil {
 		log.Printf("fingo.db already detected! Skipping database creation...")
@@ -30,6 +31,7 @@ func CheckAndCreate() error {
 	return nil
 }
 
+// GetDatabaseConnection opens and returns a connection to the SQLite database.
 func GetDatabaseConnection() (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", "file:fingo.db")
 	if err != nil {

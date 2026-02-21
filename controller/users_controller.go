@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// GetUserByIDHandler handles GET /users/{id} and returns the user with the given ID.
 func GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -27,6 +28,7 @@ func GetUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *user)
 }
 
+// GetAllUsersHandler handles GET /users and returns all users.
 func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -40,6 +42,7 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, usersList)
 }
 
+// CreateUserHandler handles POST /users and creates a new user from the request body.
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -60,6 +63,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, *userRec)
 }
 
+// UpdateUserByIDHandler handles PATCH /users/{id} and applies a partial update to the given user.
 func UpdateUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -85,6 +89,7 @@ func UpdateUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *user)
 }
 
+// DeleteUserByIDHandler handles DELETE /users/{id} and removes the user with the given ID.
 func DeleteUserByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()

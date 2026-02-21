@@ -9,6 +9,7 @@ import (
 	"net/http"
 )
 
+// GetTransactionByIDHandler handles GET /transactions/{id} and returns the transaction with the given ID.
 func GetTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -29,6 +30,7 @@ func GetTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *transaction)
 }
 
+// GetAllTransactionsHandler handles GET /transactions and returns all transactions.
 func GetAllTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -43,6 +45,7 @@ func GetAllTransactionsHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, transactionsList)
 }
 
+// CreateTransactionHandler handles POST /transactions and creates a new transaction from the request body.
 func CreateTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -64,6 +67,7 @@ func CreateTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, *transactionRec)
 }
 
+// UpdateTransactionByIDHandler handles PATCH /transactions/{id} and applies a partial update to the given transaction.
 func UpdateTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
@@ -91,6 +95,7 @@ func UpdateTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, *transaction)
 }
 
+// DeleteTransactionByIDHandler handles DELETE /transactions/{id} and removes the transaction with the given ID.
 func DeleteTransactionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := dbsqlite.NewDBContext()
 	defer cancel()
