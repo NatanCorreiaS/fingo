@@ -46,6 +46,10 @@ func registerRoutes(mux *http.ServeMux, routes []Route) {
 // RouterMux builds and returns the application ServeMux with all routes registered.
 func RouterMux() *http.ServeMux {
 	mux := http.NewServeMux()
+
+	fs := http.FileServer(http.Dir("./static"))
+	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
+
 	registerRoutes(mux, UserRoutes)
 	registerRoutes(mux, TransactionRoutes)
 	registerRoutes(mux, GoalRoutes)
