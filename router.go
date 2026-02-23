@@ -50,6 +50,10 @@ func RouterMux() *http.ServeMux {
 	fs := http.FileServer(http.Dir("./static"))
 	mux.Handle("GET /static/", http.StripPrefix("/static/", fs))
 
+	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, "./web/index.html")
+	})
+
 	registerRoutes(mux, UserRoutes)
 	registerRoutes(mux, TransactionRoutes)
 	registerRoutes(mux, GoalRoutes)

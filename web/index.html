@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Fingo - Financial Manager</title>
+        <link rel="stylesheet" href="/static/style.css" />
+    </head>
+    <body>
+        <header>
+            <div class="lang-switcher">
+                <button
+                    class="lang-btn"
+                    id="lang-en"
+                    title="English"
+                    aria-label="Switch to English"
+                >
+                    <svg viewBox="0 0 60 30" width="36" height="18">
+                        <clipPath id="us-clip">
+                            <rect width="60" height="30" />
+                        </clipPath>
+                        <g clip-path="url(#us-clip)">
+                            <rect width="60" height="30" fill="#b22234" />
+                            <rect
+                                y="2.31"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect
+                                y="6.92"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect
+                                y="11.54"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect
+                                y="16.15"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect
+                                y="20.77"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect
+                                y="25.38"
+                                width="60"
+                                height="2.31"
+                                fill="#fff"
+                            />
+                            <rect width="24" height="16.15" fill="#3c3b6e" />
+                            <g
+                                fill="#fff"
+                                font-size="3"
+                                font-family="sans-serif"
+                                text-anchor="middle"
+                            >
+                                <text x="4" y="4">&#9733;</text>
+                                <text x="8" y="4">&#9733;</text>
+                                <text x="12" y="4">&#9733;</text>
+                                <text x="16" y="4">&#9733;</text>
+                                <text x="20" y="4">&#9733;</text>
+                                <text x="6" y="7">&#9733;</text>
+                                <text x="10" y="7">&#9733;</text>
+                                <text x="14" y="7">&#9733;</text>
+                                <text x="18" y="7">&#9733;</text>
+                                <text x="4" y="10">&#9733;</text>
+                                <text x="8" y="10">&#9733;</text>
+                                <text x="12" y="10">&#9733;</text>
+                                <text x="16" y="10">&#9733;</text>
+                                <text x="20" y="10">&#9733;</text>
+                                <text x="6" y="13">&#9733;</text>
+                                <text x="10" y="13">&#9733;</text>
+                                <text x="14" y="13">&#9733;</text>
+                                <text x="18" y="13">&#9733;</text>
+                            </g>
+                        </g>
+                    </svg>
+                </button>
+                <button
+                    class="lang-btn"
+                    id="lang-pt"
+                    title="Português"
+                    aria-label="Mudar para Português"
+                >
+                    <svg viewBox="0 0 60 42" width="36" height="25">
+                        <rect width="60" height="42" fill="#009c3b" />
+                        <polygon
+                            points="30,3 57,21 30,39 3,21"
+                            fill="#ffdf00"
+                        />
+                        <circle cx="30" cy="21" r="9" fill="#002776" />
+                        <rect
+                            x="21"
+                            y="19.5"
+                            width="18"
+                            height="3"
+                            rx="1.5"
+                            fill="#fff"
+                        />
+                    </svg>
+                </button>
+            </div>
+            <div class="header-content">
+                <h1>💰 Fingo</h1>
+                <p class="subtitle" data-i18n="subtitle">
+                    Personal Financial Manager
+                </p>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="users">
+                <span>👤</span> <span data-i18n="tab_users">Users</span>
+            </button>
+            <button class="tab-btn" data-tab="transactions">
+                <span>💸</span>
+                <span data-i18n="tab_transactions">Transactions</span>
+            </button>
+            <button class="tab-btn" data-tab="goals">
+                <span>🎯</span> <span data-i18n="tab_goals">Goals</span>
+            </button>
+        </nav>
+
+        <main>
+            <!-- ==================== USERS TAB ==================== -->
+            <section id="tab-users" class="tab-content active">
+                <div class="section-header">
+                    <h2 data-i18n="users_title">Users</h2>
+                    <button class="btn btn-primary" id="btn-add-user">
+                        <span data-i18n="btn_new_user">+ New User</span>
+                    </button>
+                </div>
+
+                <!-- User Form -->
+                <div id="user-form-container" class="form-container hidden">
+                    <form id="user-form" class="crud-form">
+                        <h3 id="user-form-title" data-i18n="form_create_user">
+                            Create User
+                        </h3>
+                        <input type="hidden" id="user-id" />
+
+                        <div class="form-group">
+                            <label for="user-name" data-i18n="label_username"
+                                >Username</label
+                            >
+                            <input
+                                type="text"
+                                id="user-name"
+                                data-i18n-placeholder="ph_username"
+                                placeholder="Enter username"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="user-current-amount"
+                                data-i18n="label_current_amount"
+                                >Current Amount ($)</label
+                            >
+                            <input
+                                type="number"
+                                id="user-current-amount"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="user-monthly-inputs"
+                                data-i18n="label_monthly_inputs"
+                                >Monthly Inputs ($)</label
+                            >
+                            <input
+                                type="number"
+                                id="user-monthly-inputs"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="user-monthly-outputs"
+                                data-i18n="label_monthly_outputs"
+                                >Monthly Outputs ($)</label
+                            >
+                            <input
+                                type="number"
+                                id="user-monthly-outputs"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="user-submit-btn"
+                                data-i18n="btn_create"
+                            >
+                                Create
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                id="user-cancel-btn"
+                                data-i18n="btn_cancel"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th data-i18n="th_username">Username</th>
+                                <th data-i18n="th_current_amount">
+                                    Current Amount
+                                </th>
+                                <th data-i18n="th_monthly_inputs">
+                                    Monthly Inputs
+                                </th>
+                                <th data-i18n="th_monthly_outputs">
+                                    Monthly Outputs
+                                </th>
+                                <th data-i18n="th_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <tr>
+                                <td
+                                    colspan="6"
+                                    class="empty-msg"
+                                    data-i18n="loading"
+                                >
+                                    Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== TRANSACTIONS TAB ==================== -->
+            <section id="tab-transactions" class="tab-content">
+                <div class="section-header">
+                    <h2 data-i18n="transactions_title">Transactions</h2>
+                    <button class="btn btn-primary" id="btn-add-transaction">
+                        <span data-i18n="btn_new_transaction"
+                            >+ New Transaction</span
+                        >
+                    </button>
+                </div>
+
+                <!-- Transaction Form -->
+                <div
+                    id="transaction-form-container"
+                    class="form-container hidden"
+                >
+                    <form id="transaction-form" class="crud-form">
+                        <h3
+                            id="transaction-form-title"
+                            data-i18n="form_create_transaction"
+                        >
+                            Create Transaction
+                        </h3>
+                        <input type="hidden" id="transaction-id" />
+
+                        <div class="form-group">
+                            <label
+                                for="transaction-description"
+                                data-i18n="label_description"
+                                >Description</label
+                            >
+                            <input
+                                type="text"
+                                id="transaction-description"
+                                data-i18n-placeholder="ph_description"
+                                placeholder="Enter description"
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="transaction-amount"
+                                data-i18n="label_amount"
+                                >Amount ($)</label
+                            >
+                            <input
+                                type="number"
+                                id="transaction-amount"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="transaction-is-debt"
+                                class="checkbox-label"
+                            >
+                                <input
+                                    type="checkbox"
+                                    id="transaction-is-debt"
+                                />
+                                <span data-i18n="label_is_debt">Is Debt</span>
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="transaction-user-id"
+                                data-i18n="label_user_id"
+                                >User ID</label
+                            >
+                            <select id="transaction-user-id" required>
+                                <option value="" data-i18n="opt_select_user">
+                                    Select a user...
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="transaction-submit-btn"
+                                data-i18n="btn_create"
+                            >
+                                Create
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                id="transaction-cancel-btn"
+                                data-i18n="btn_cancel"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th data-i18n="th_description">Description</th>
+                                <th data-i18n="th_amount">Amount</th>
+                                <th data-i18n="th_debt">Debt</th>
+                                <th data-i18n="th_user_id">User ID</th>
+                                <th data-i18n="th_created_at">Created At</th>
+                                <th data-i18n="th_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transactions-tbody">
+                            <tr>
+                                <td
+                                    colspan="7"
+                                    class="empty-msg"
+                                    data-i18n="loading"
+                                >
+                                    Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ==================== GOALS TAB ==================== -->
+            <section id="tab-goals" class="tab-content">
+                <div class="section-header">
+                    <h2 data-i18n="goals_title">Goals</h2>
+                    <button class="btn btn-primary" id="btn-add-goal">
+                        <span data-i18n="btn_new_goal">+ New Goal</span>
+                    </button>
+                </div>
+
+                <!-- Goal Form -->
+                <div id="goal-form-container" class="form-container hidden">
+                    <form id="goal-form" class="crud-form">
+                        <h3 id="goal-form-title" data-i18n="form_create_goal">
+                            Create Goal
+                        </h3>
+                        <input type="hidden" id="goal-id" />
+
+                        <div class="form-group">
+                            <label for="goal-name" data-i18n="label_name"
+                                >Name</label
+                            >
+                            <input
+                                type="text"
+                                id="goal-name"
+                                data-i18n-placeholder="ph_goal_name"
+                                placeholder="Goal name"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="goal-description"
+                                data-i18n="label_description"
+                                >Description</label
+                            >
+                            <textarea
+                                id="goal-description"
+                                rows="2"
+                                data-i18n-placeholder="ph_goal_description"
+                                placeholder="Goal description"
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goal-price" data-i18n="label_price"
+                                >Price ($)</label
+                            >
+                            <input
+                                type="number"
+                                id="goal-price"
+                                step="0.01"
+                                placeholder="0.00"
+                                required
+                            />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goal-pros" data-i18n="label_pros"
+                                >Pros</label
+                            >
+                            <textarea
+                                id="goal-pros"
+                                rows="2"
+                                data-i18n-placeholder="ph_pros"
+                                placeholder="Advantages of this goal"
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goal-cons" data-i18n="label_cons"
+                                >Cons</label
+                            >
+                            <textarea
+                                id="goal-cons"
+                                rows="2"
+                                data-i18n-placeholder="ph_cons"
+                                placeholder="Disadvantages of this goal"
+                            ></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="goal-user-id" data-i18n="label_user_id"
+                                >User ID</label
+                            >
+                            <select id="goal-user-id" required>
+                                <option value="" data-i18n="opt_select_user">
+                                    Select a user...
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label
+                                for="goal-deadline"
+                                data-i18n="label_deadline"
+                                >Deadline</label
+                            >
+                            <input type="date" id="goal-deadline" required />
+                        </div>
+
+                        <div class="form-actions">
+                            <button
+                                type="submit"
+                                class="btn btn-primary"
+                                id="goal-submit-btn"
+                                data-i18n="btn_create"
+                            >
+                                Create
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                id="goal-cancel-btn"
+                                data-i18n="btn_cancel"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="table-wrapper">
+                    <table id="goals-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th data-i18n="th_name">Name</th>
+                                <th data-i18n="th_description">Description</th>
+                                <th data-i18n="th_price">Price</th>
+                                <th data-i18n="th_pros">Pros</th>
+                                <th data-i18n="th_cons">Cons</th>
+                                <th data-i18n="th_user_id">User ID</th>
+                                <th data-i18n="th_deadline">Deadline</th>
+                                <th data-i18n="th_created_at">Created At</th>
+                                <th data-i18n="th_actions">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="goals-tbody">
+                            <tr>
+                                <td
+                                    colspan="10"
+                                    class="empty-msg"
+                                    data-i18n="loading"
+                                >
+                                    Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast notification -->
+        <div id="toast" class="toast hidden"></div>
+
+        <!-- Confirm dialog -->
+        <div id="confirm-overlay" class="confirm-overlay hidden">
+            <div class="confirm-dialog">
+                <p id="confirm-message">Are you sure?</p>
+                <div class="confirm-actions">
+                    <button
+                        class="btn btn-danger"
+                        id="confirm-yes"
+                        data-i18n="btn_delete"
+                    >
+                        Delete
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        id="confirm-no"
+                        data-i18n="btn_cancel"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                <span>Fingo</span> &mdash;
+                <span data-i18n="footer_text"
+                    >Take control of your finances</span
+                >
+            </p>
+        </footer>
+
+        <script src="/static/app.js"></script>
+    </body>
+</html>
