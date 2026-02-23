@@ -300,4 +300,246 @@ func TestDeleteUserByID(t *testing.T) {
 	}
 }
 
+// ---- GetAllTransactionsByUserID service tests ----
+
+func TestGetAllTransactionsByUserID(t *testing.T) {
+	t.Parallel()
+
+	user, err := CreateUser(ctxTest, model.User{
+		UserName: "tx-by-user-service",
+	})
+	if err != nil {
+		t.Fatalf("failed to create user for GetAllTransactionsByUserID tests: %v", err)
+	}
+
+	_, err = CreateTransaction(ctxTest, model.Transaction{
+		Desc:   "TX for user 1",
+		Amount: 100,
+		IsDebt: false,
+		UserID: user.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
+
+	_, err = CreateTransaction(ctxTest, model.Transaction{
+		Desc:   "TX for user 2",
+		Amount: 200,
+		IsDebt: true,
+		UserID: user.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create transaction: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		id          int64
+		wantMinSize int
+		wantErr     bool
+	}{
+		{
+			name:        "existing_user_with_transactions",
+			id:          user.ID,
+			wantMinSize: 2,
+			wantErr:     false,
+		},
+		{
+			name:        "non_existing_user_returns_empty",
+			id:          user.ID + 999999,
+			wantMinSize: 0,
+			wantErr:     false,
+		},
+		{
+			name:        "zero_id_returns_empty",
+			id:          0,
+			wantMinSize: 0,
+			wantErr:     false,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			txs, err := GetAllTransactionsByUserID(ctxTest, tc.id)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("GetAllTransactionsByUserID() expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetAllTransactionsByUserID() unexpected error: %v", err)
+			}
+			if len(txs) < tc.wantMinSize {
+				t.Errorf("GetAllTransactionsByUserID() length < %d, got %d", tc.wantMinSize, len(txs))
+			}
+			for _, tx := range txs {
+				if tx.UserID != tc.id {
+					t.Errorf("GetAllTransactionsByUserID() returned transaction with UserID=%d, want %d", tx.UserID, tc.id)
+				}
+			}
+		})
+	}
+}
+
+func TestGetAllTransactionsByUserID_Isolation(t *testing.T) {
+	t.Parallel()
+
+	user1, err := CreateUser(ctxTest, model.User{UserName: "tx-isolation-user1"})
+	if err != nil {
+		t.Fatalf("failed to create user1: %v", err)
+	}
+	user2, err := CreateUser(ctxTest, model.User{UserName: "tx-isolation-user2"})
+	if err != nil {
+		t.Fatalf("failed to create user2: %v", err)
+	}
+
+	_, err = CreateTransaction(ctxTest, model.Transaction{
+		Desc: "User1 TX", Amount: 500, IsDebt: false, UserID: user1.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create transaction for user1: %v", err)
+	}
+	_, err = CreateTransaction(ctxTest, model.Transaction{
+		Desc: "User2 TX", Amount: 300, IsDebt: true, UserID: user2.ID,
+	})
+	if err != nil {
+		t.Fatalf("failed to create transaction for user2: %v", err)
+	}
+
+	txs, err := GetAllTransactionsByUserID(ctxTest, user1.ID)
+	if err != nil {
+		t.Fatalf("GetAllTransactionsByUserID() unexpected error: %v", err)
+	}
+	for _, tx := range txs {
+		if tx.UserID != user1.ID {
+			t.Errorf("expected all transactions to belong to user1 (ID=%d), got UserID=%d", user1.ID, tx.UserID)
+		}
+	}
+}
+
+// ---- GetAllGoalsByUserID service tests ----
+
+func TestGetAllGoalsByUserID(t *testing.T) {
+	t.Parallel()
+
+	user, err := CreateUser(ctxTest, model.User{
+		UserName: "goals-by-user-service",
+	})
+	if err != nil {
+		t.Fatalf("failed to create user for GetAllGoalsByUserID tests: %v", err)
+	}
+
+	_, err = CreateGoal(ctxTest, model.Goal{
+		Name:     "Goal A",
+		Price:    100,
+		UserID:   user.ID,
+		Deadline: "2026-01-01",
+	})
+	if err != nil {
+		t.Fatalf("failed to create goal: %v", err)
+	}
+
+	_, err = CreateGoal(ctxTest, model.Goal{
+		Name:     "Goal B",
+		Price:    200,
+		UserID:   user.ID,
+		Deadline: "2026-06-01",
+	})
+	if err != nil {
+		t.Fatalf("failed to create goal: %v", err)
+	}
+
+	tests := []struct {
+		name        string
+		id          int64
+		wantMinSize int
+		wantErr     bool
+	}{
+		{
+			name:        "existing_user_with_goals",
+			id:          user.ID,
+			wantMinSize: 2,
+			wantErr:     false,
+		},
+		{
+			name:        "non_existing_user_returns_empty",
+			id:          user.ID + 999999,
+			wantMinSize: 0,
+			wantErr:     false,
+		},
+		{
+			name:        "zero_id_returns_empty",
+			id:          0,
+			wantMinSize: 0,
+			wantErr:     false,
+		},
+	}
+
+	for _, tc := range tests {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			goals, err := GetAllGoalsByUserID(ctxTest, tc.id)
+
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("GetAllGoalsByUserID() expected error, got nil")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("GetAllGoalsByUserID() unexpected error: %v", err)
+			}
+			if len(goals) < tc.wantMinSize {
+				t.Errorf("GetAllGoalsByUserID() length < %d, got %d", tc.wantMinSize, len(goals))
+			}
+			for _, g := range goals {
+				if g.UserID != tc.id {
+					t.Errorf("GetAllGoalsByUserID() returned goal with UserID=%d, want %d", g.UserID, tc.id)
+				}
+			}
+		})
+	}
+}
+
+func TestGetAllGoalsByUserID_Isolation(t *testing.T) {
+	t.Parallel()
+
+	user1, err := CreateUser(ctxTest, model.User{UserName: "goal-isolation-user1"})
+	if err != nil {
+		t.Fatalf("failed to create user1: %v", err)
+	}
+	user2, err := CreateUser(ctxTest, model.User{UserName: "goal-isolation-user2"})
+	if err != nil {
+		t.Fatalf("failed to create user2: %v", err)
+	}
+
+	_, err = CreateGoal(ctxTest, model.Goal{
+		Name: "User1 Goal", Price: 500, UserID: user1.ID, Deadline: "2026-01-01",
+	})
+	if err != nil {
+		t.Fatalf("failed to create goal for user1: %v", err)
+	}
+	_, err = CreateGoal(ctxTest, model.Goal{
+		Name: "User2 Goal", Price: 300, UserID: user2.ID, Deadline: "2026-01-01",
+	})
+	if err != nil {
+		t.Fatalf("failed to create goal for user2: %v", err)
+	}
+
+	goals, err := GetAllGoalsByUserID(ctxTest, user1.ID)
+	if err != nil {
+		t.Fatalf("GetAllGoalsByUserID() unexpected error: %v", err)
+	}
+	for _, g := range goals {
+		if g.UserID != user1.ID {
+			t.Errorf("expected all goals to belong to user1 (ID=%d), got UserID=%d", user1.ID, g.UserID)
+		}
+	}
+}
+
 // ---- Helpers ----

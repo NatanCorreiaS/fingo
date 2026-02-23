@@ -249,6 +249,117 @@ func TestGoals_TableDriven(t *testing.T) {
 			},
 		},
 		{
+			name: "GetAllGoalsByUserID returns goals for specific user",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				g1 := model.Goal{
+					Name:     "Goal A",
+					Desc:     "First goal",
+					Price:    utils.Money(10000),
+					Pros:     "good",
+					Cons:     "none",
+					UserID:   userID,
+					Deadline: "2026-01-01",
+				}
+				g2 := model.Goal{
+					Name:     "Goal B",
+					Desc:     "Second goal",
+					Price:    utils.Money(20000),
+					Pros:     "great",
+					Cons:     "pricey",
+					UserID:   userID,
+					Deadline: "2026-06-01",
+				}
+				if _, err := CreateGoal(ctx, g1, db); err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+				if _, err := CreateGoal(ctx, g2, db); err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+
+				list, err := GetAllGoalsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllGoalsByUserID() returned error: %v", err)
+				}
+				if len(list) != 2 {
+					t.Fatalf("expected 2 goals for user, got %d", len(list))
+				}
+				for _, g := range list {
+					if g.UserID != userID {
+						t.Errorf("expected UserID=%d, got %d", userID, g.UserID)
+					}
+				}
+			},
+		},
+		{
+			name: "GetAllGoalsByUserID returns empty for user with no goals",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				list, err := GetAllGoalsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllGoalsByUserID() returned error: %v", err)
+				}
+				if len(list) != 0 {
+					t.Fatalf("expected 0 goals for user with no goals, got %d", len(list))
+				}
+			},
+		},
+		{
+			name: "GetAllGoalsByUserID returns only goals for the given user",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				// Create a second user
+				otherUser := model.User{
+					UserName:       "other-goal-user",
+					CurrentAmount:  utils.Money(0),
+					MonthlyInputs:  utils.Money(0),
+					MonthlyOutputs: utils.Money(0),
+				}
+				otherRet, err := CreateUser(ctx, otherUser, db)
+				if err != nil {
+					t.Fatalf("failed to create other user: %v", err)
+				}
+
+				// Create goals for both users
+				if _, err := CreateGoal(ctx, model.Goal{
+					Name: "Main user goal", Desc: "desc", Price: utils.Money(100),
+					Pros: "", Cons: "", UserID: userID, Deadline: "2026-01-01",
+				}, db); err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+				if _, err := CreateGoal(ctx, model.Goal{
+					Name: "Other user goal", Desc: "desc", Price: utils.Money(200),
+					Pros: "", Cons: "", UserID: otherRet.ID, Deadline: "2026-01-01",
+				}, db); err != nil {
+					t.Fatalf("CreateGoal() returned error: %v", err)
+				}
+
+				// Query for main user only
+				list, err := GetAllGoalsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllGoalsByUserID() returned error: %v", err)
+				}
+				if len(list) != 1 {
+					t.Fatalf("expected 1 goal for main user, got %d", len(list))
+				}
+				if list[0].UserID != userID {
+					t.Errorf("expected UserID=%d, got %d", userID, list[0].UserID)
+				}
+				if list[0].Name != "Main user goal" {
+					t.Errorf("expected name=%q, got %q", "Main user goal", list[0].Name)
+				}
+			},
+		},
+		{
+			name: "GetAllGoalsByUserID returns empty for non-existent user id",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				list, err := GetAllGoalsByUserID(ctx, 999999, db)
+				if err != nil {
+					t.Fatalf("GetAllGoalsByUserID() returned error: %v", err)
+				}
+				if len(list) != 0 {
+					t.Fatalf("expected 0 goals for non-existent user, got %d", len(list))
+				}
+			},
+		},
+		{
 			name: "DeleteGoalByID deletes existing goal and subsequent GetGoalByID returns ErrNoRows",
 			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				g := model.Goal{

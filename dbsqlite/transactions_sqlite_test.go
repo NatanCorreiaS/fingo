@@ -240,6 +240,109 @@ func TestTransactions_TableDriven(t *testing.T) {
 			},
 		},
 		{
+			name: "GetAllTransactionsByUserID returns transactions for specific user",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				tr1 := model.Transaction{
+					Desc:   "User TX 1",
+					Amount: utils.Money(1000),
+					IsDebt: false,
+					UserID: userID,
+				}
+				tr2 := model.Transaction{
+					Desc:   "User TX 2",
+					Amount: utils.Money(2000),
+					IsDebt: true,
+					UserID: userID,
+				}
+				if _, err := CreateTransaction(ctx, tr1, db); err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+				if _, err := CreateTransaction(ctx, tr2, db); err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+
+				list, err := GetAllTransactionsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllTransactionsByUserID() returned error: %v", err)
+				}
+				if len(list) != 2 {
+					t.Fatalf("expected 2 transactions for user, got %d", len(list))
+				}
+				for _, tx := range list {
+					if tx.UserID != userID {
+						t.Errorf("expected UserID=%d, got %d", userID, tx.UserID)
+					}
+				}
+			},
+		},
+		{
+			name: "GetAllTransactionsByUserID returns empty for user with no transactions",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				list, err := GetAllTransactionsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllTransactionsByUserID() returned error: %v", err)
+				}
+				if len(list) != 0 {
+					t.Fatalf("expected 0 transactions for user with no transactions, got %d", len(list))
+				}
+			},
+		},
+		{
+			name: "GetAllTransactionsByUserID returns only transactions for the given user",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				// Create a second user
+				otherUser := model.User{
+					UserName:       "other-tx-user",
+					CurrentAmount:  utils.Money(0),
+					MonthlyInputs:  utils.Money(0),
+					MonthlyOutputs: utils.Money(0),
+				}
+				otherRet, err := CreateUser(ctx, otherUser, db)
+				if err != nil {
+					t.Fatalf("failed to create other user: %v", err)
+				}
+
+				// Create transactions for both users
+				if _, err := CreateTransaction(ctx, model.Transaction{
+					Desc: "Main user TX", Amount: utils.Money(100), IsDebt: false, UserID: userID,
+				}, db); err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+				if _, err := CreateTransaction(ctx, model.Transaction{
+					Desc: "Other user TX", Amount: utils.Money(200), IsDebt: false, UserID: otherRet.ID,
+				}, db); err != nil {
+					t.Fatalf("CreateTransaction() returned error: %v", err)
+				}
+
+				// Query for main user only
+				list, err := GetAllTransactionsByUserID(ctx, userID, db)
+				if err != nil {
+					t.Fatalf("GetAllTransactionsByUserID() returned error: %v", err)
+				}
+				if len(list) != 1 {
+					t.Fatalf("expected 1 transaction for main user, got %d", len(list))
+				}
+				if list[0].UserID != userID {
+					t.Errorf("expected UserID=%d, got %d", userID, list[0].UserID)
+				}
+				if list[0].Desc != "Main user TX" {
+					t.Errorf("expected desc=%q, got %q", "Main user TX", list[0].Desc)
+				}
+			},
+		},
+		{
+			name: "GetAllTransactionsByUserID returns empty for non-existent user id",
+			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
+				list, err := GetAllTransactionsByUserID(ctx, 999999, db)
+				if err != nil {
+					t.Fatalf("GetAllTransactionsByUserID() returned error: %v", err)
+				}
+				if len(list) != 0 {
+					t.Fatalf("expected 0 transactions for non-existent user, got %d", len(list))
+				}
+			},
+		},
+		{
 			name: "DeleteTransactionByID deletes existing transaction and subsequent GetTransactionByID returns ErrNoRows",
 			testFn: func(t *testing.T, ctx context.Context, db *sql.DB, userID int64) {
 				tr := model.Transaction{
