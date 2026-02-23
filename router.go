@@ -15,6 +15,8 @@ type Route struct {
 var UserRoutes = []Route{
 	{"GET", "/users/{id}", controller.GetUserByIDHandler},
 	{"GET", "/users", controller.GetAllUsersHandler},
+	{"GET", "/users/transactions/{id}", controller.GetAllTransactionsByUserIDHandler},
+	{"GET", "/users/goals/{id}", controller.GetAllGoalsByUserIDHandler},
 	{"POST", "/users", controller.CreateUserHandler},
 	{"PATCH", "/users/{id}", controller.UpdateUserByIDHandler},
 	{"DELETE", "/users/{id}", controller.DeleteUserByIDHandler},

@@ -54,6 +54,38 @@ func GetAllUsers(ctx context.Context) ([]model.User, error) {
 	return users, nil
 }
 
+func GetAllTransactionsByUserID(ctx context.Context, id int64)([]model.Transaction, error){
+	db, err := dbsqlite.GetDatabaseConnection()
+	if err != nil{
+		return nil, err
+	}
+	
+	defer db.Close()
+	
+	transactions, err := dbsqlite.GetAllTransactionsByUserID(ctx, id, db)
+	if err != nil{
+		return nil, err
+	}
+	
+	return transactions, nil
+}
+
+func GetAllGoalsByUserID(ctx context.Context, id int64)([]model.Goal, error){
+	db, err := dbsqlite.GetDatabaseConnection()
+	if err != nil{
+		return nil, err
+	}
+	
+	defer db.Close()
+	
+	goals, err := dbsqlite.GetAllGoalsByUserID(ctx, id, db)
+	if err != nil{
+		return nil, err
+	}
+	
+	return goals, err
+}
+
 // DeleteUserByID removes the user with the given ID and returns the number of affected rows.
 func DeleteUserByID(ctx context.Context, id int64) (int64, error) {
 	db, err := dbsqlite.GetDatabaseConnection()

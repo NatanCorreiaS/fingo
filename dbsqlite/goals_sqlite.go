@@ -36,6 +36,33 @@ func GetAllGoals(ctx context.Context, db *sql.DB) ([]model.Goal, error) {
 	return goalsList, nil
 }
 
+func GetAllGoalsByUserID(ctx context.Context, id int64, db *sql.DB)([]model.Goal, error){
+	const query = "SELECT id, name, description, price, pros, cons, user_id, created_at, deadline FROM goals WHERE user_id = ?"
+	
+	rows, err := db.QueryContext(ctx, query, id)
+	if err != nil{
+		return nil, fmt.Errorf("could not execute the query to return all goals using user_id: %w", err)
+	}
+	
+	defer rows.Close()
+	
+	var goalsList []model.Goal
+	
+	for rows.Next(){
+		var goal model.Goal
+		if err := rows.Scan(&goal.ID, &goal.Name, &goal.Desc, &goal.Price, &goal.Pros, &goal.Cons, &goal.UserID, &goal.CreatedAt, &goal.Deadline); err != nil{
+			return nil, fmt.Errorf("could not scan the data into goal struct: %w", err)
+		}
+		goalsList = append(goalsList, goal)
+	}
+	
+	if err := rows.Err(); err != nil{
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	
+	return goalsList, nil
+}
+
 // GetGoalByID retrieves a single goal by its ID.
 func GetGoalByID(ctx context.Context, id int64, db *sql.DB) (*model.Goal, error) {
 	const selectStmt = "SELECT id, name, description, price, pros, cons, user_id, created_at, deadline FROM goals WHERE id = ?"

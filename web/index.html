@@ -118,6 +118,23 @@
             </div>
         </header>
 
+        <!-- Selected user banner -->
+        <div id="selected-user-bar" class="selected-user-bar hidden">
+            <span class="selected-user-info">
+                <span class="selected-user-icon">👤</span>
+                <span id="selected-user-name" data-i18n="no_user_selected"
+                    >No user selected</span
+                >
+            </span>
+            <button
+                class="btn btn-sm btn-secondary"
+                id="btn-deselect-user"
+                data-i18n="btn_change_user"
+            >
+                Change
+            </button>
+        </div>
+
         <nav class="tabs">
             <button class="tab-btn active" data-tab="users">
                 <span>👤</span> <span data-i18n="tab_users">Users</span>
@@ -140,6 +157,11 @@
                         <span data-i18n="btn_new_user">+ New User</span>
                     </button>
                 </div>
+
+                <p class="hint-text" data-i18n="hint_click_user">
+                    Click on a user row to select it and view their transactions
+                    and goals.
+                </p>
 
                 <!-- User Form -->
                 <div id="user-form-container" class="form-container hidden">
@@ -263,283 +285,314 @@
 
             <!-- ==================== TRANSACTIONS TAB ==================== -->
             <section id="tab-transactions" class="tab-content">
-                <div class="section-header">
-                    <h2 data-i18n="transactions_title">Transactions</h2>
-                    <button class="btn btn-primary" id="btn-add-transaction">
-                        <span data-i18n="btn_new_transaction"
-                            >+ New Transaction</span
-                        >
+                <!-- Prompt shown when no user is selected -->
+                <div id="transactions-no-user" class="no-user-prompt">
+                    <div class="no-user-icon">💸</div>
+                    <p data-i18n="prompt_select_user_transactions">
+                        Select a user from the Users tab to view their
+                        transactions.
+                    </p>
+                    <button
+                        class="btn btn-primary"
+                        id="btn-go-users-from-transactions"
+                        data-i18n="btn_go_to_users"
+                    >
+                        Go to Users
                     </button>
                 </div>
 
-                <!-- Transaction Form -->
-                <div
-                    id="transaction-form-container"
-                    class="form-container hidden"
-                >
-                    <form id="transaction-form" class="crud-form">
-                        <h3
-                            id="transaction-form-title"
-                            data-i18n="form_create_transaction"
+                <!-- Content shown when a user is selected -->
+                <div id="transactions-content" class="hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="transactions_title">Transactions</h2>
+                        <button
+                            class="btn btn-primary"
+                            id="btn-add-transaction"
                         >
-                            Create Transaction
-                        </h3>
-                        <input type="hidden" id="transaction-id" />
-
-                        <div class="form-group">
-                            <label
-                                for="transaction-description"
-                                data-i18n="label_description"
-                                >Description</label
+                            <span data-i18n="btn_new_transaction"
+                                >+ New Transaction</span
                             >
-                            <input
-                                type="text"
-                                id="transaction-description"
-                                data-i18n-placeholder="ph_description"
-                                placeholder="Enter description"
-                            />
-                        </div>
+                        </button>
+                    </div>
 
-                        <div class="form-group">
-                            <label
-                                for="transaction-amount"
-                                data-i18n="label_amount"
-                                >Amount ($)</label
+                    <!-- Transaction Form -->
+                    <div
+                        id="transaction-form-container"
+                        class="form-container hidden"
+                    >
+                        <form id="transaction-form" class="crud-form">
+                            <h3
+                                id="transaction-form-title"
+                                data-i18n="form_create_transaction"
                             >
-                            <input
-                                type="number"
-                                id="transaction-amount"
-                                step="0.01"
-                                placeholder="0.00"
-                                required
-                            />
-                        </div>
+                                Create Transaction
+                            </h3>
+                            <input type="hidden" id="transaction-id" />
 
-                        <div class="form-group">
-                            <label
-                                for="transaction-is-debt"
-                                class="checkbox-label"
-                            >
-                                <input
-                                    type="checkbox"
-                                    id="transaction-is-debt"
-                                />
-                                <span data-i18n="label_is_debt">Is Debt</span>
-                            </label>
-                        </div>
-
-                        <div class="form-group">
-                            <label
-                                for="transaction-user-id"
-                                data-i18n="label_user_id"
-                                >User ID</label
-                            >
-                            <select id="transaction-user-id" required>
-                                <option value="" data-i18n="opt_select_user">
-                                    Select a user...
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="form-actions">
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="transaction-submit-btn"
-                                data-i18n="btn_create"
-                            >
-                                Create
-                            </button>
-                            <button
-                                type="button"
-                                class="btn btn-secondary"
-                                id="transaction-cancel-btn"
-                                data-i18n="btn_cancel"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="transactions-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th data-i18n="th_description">Description</th>
-                                <th data-i18n="th_amount">Amount</th>
-                                <th data-i18n="th_debt">Debt</th>
-                                <th data-i18n="th_user_id">User ID</th>
-                                <th data-i18n="th_created_at">Created At</th>
-                                <th data-i18n="th_actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="transactions-tbody">
-                            <tr>
-                                <td
-                                    colspan="7"
-                                    class="empty-msg"
-                                    data-i18n="loading"
+                            <div class="form-group">
+                                <label
+                                    for="transaction-description"
+                                    data-i18n="label_description"
+                                    >Description</label
                                 >
-                                    Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                <input
+                                    type="text"
+                                    id="transaction-description"
+                                    data-i18n-placeholder="ph_description"
+                                    placeholder="Enter description"
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label
+                                    for="transaction-amount"
+                                    data-i18n="label_amount"
+                                    >Amount ($)</label
+                                >
+                                <input
+                                    type="number"
+                                    id="transaction-amount"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label
+                                    for="transaction-is-debt"
+                                    class="checkbox-label"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        id="transaction-is-debt"
+                                    />
+                                    <span data-i18n="label_is_debt"
+                                        >Is Debt</span
+                                    >
+                                </label>
+                            </div>
+
+                            <div class="form-actions">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    id="transaction-submit-btn"
+                                    data-i18n="btn_create"
+                                >
+                                    Create
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    id="transaction-cancel-btn"
+                                    data-i18n="btn_cancel"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th data-i18n="th_description">
+                                        Description
+                                    </th>
+                                    <th data-i18n="th_amount">Amount</th>
+                                    <th data-i18n="th_debt">Debt</th>
+                                    <th data-i18n="th_created_at">
+                                        Created At
+                                    </th>
+                                    <th data-i18n="th_actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transactions-tbody">
+                                <tr>
+                                    <td
+                                        colspan="6"
+                                        class="empty-msg"
+                                        data-i18n="loading"
+                                    >
+                                        Loading...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
             <!-- ==================== GOALS TAB ==================== -->
             <section id="tab-goals" class="tab-content">
-                <div class="section-header">
-                    <h2 data-i18n="goals_title">Goals</h2>
-                    <button class="btn btn-primary" id="btn-add-goal">
-                        <span data-i18n="btn_new_goal">+ New Goal</span>
+                <!-- Prompt shown when no user is selected -->
+                <div id="goals-no-user" class="no-user-prompt">
+                    <div class="no-user-icon">🎯</div>
+                    <p data-i18n="prompt_select_user_goals">
+                        Select a user from the Users tab to view their goals.
+                    </p>
+                    <button
+                        class="btn btn-primary"
+                        id="btn-go-users-from-goals"
+                        data-i18n="btn_go_to_users"
+                    >
+                        Go to Users
                     </button>
                 </div>
 
-                <!-- Goal Form -->
-                <div id="goal-form-container" class="form-container hidden">
-                    <form id="goal-form" class="crud-form">
-                        <h3 id="goal-form-title" data-i18n="form_create_goal">
-                            Create Goal
-                        </h3>
-                        <input type="hidden" id="goal-id" />
+                <!-- Content shown when a user is selected -->
+                <div id="goals-content" class="hidden">
+                    <div class="section-header">
+                        <h2 data-i18n="goals_title">Goals</h2>
+                        <button class="btn btn-primary" id="btn-add-goal">
+                            <span data-i18n="btn_new_goal">+ New Goal</span>
+                        </button>
+                    </div>
 
-                        <div class="form-group">
-                            <label for="goal-name" data-i18n="label_name"
-                                >Name</label
+                    <!-- Goal Form -->
+                    <div id="goal-form-container" class="form-container hidden">
+                        <form id="goal-form" class="crud-form">
+                            <h3
+                                id="goal-form-title"
+                                data-i18n="form_create_goal"
                             >
-                            <input
-                                type="text"
-                                id="goal-name"
-                                data-i18n-placeholder="ph_goal_name"
-                                placeholder="Goal name"
-                                required
-                            />
-                        </div>
+                                Create Goal
+                            </h3>
+                            <input type="hidden" id="goal-id" />
 
-                        <div class="form-group">
-                            <label
-                                for="goal-description"
-                                data-i18n="label_description"
-                                >Description</label
-                            >
-                            <textarea
-                                id="goal-description"
-                                rows="2"
-                                data-i18n-placeholder="ph_goal_description"
-                                placeholder="Goal description"
-                            ></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="goal-price" data-i18n="label_price"
-                                >Price ($)</label
-                            >
-                            <input
-                                type="number"
-                                id="goal-price"
-                                step="0.01"
-                                placeholder="0.00"
-                                required
-                            />
-                        </div>
-
-                        <div class="form-group">
-                            <label for="goal-pros" data-i18n="label_pros"
-                                >Pros</label
-                            >
-                            <textarea
-                                id="goal-pros"
-                                rows="2"
-                                data-i18n-placeholder="ph_pros"
-                                placeholder="Advantages of this goal"
-                            ></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="goal-cons" data-i18n="label_cons"
-                                >Cons</label
-                            >
-                            <textarea
-                                id="goal-cons"
-                                rows="2"
-                                data-i18n-placeholder="ph_cons"
-                                placeholder="Disadvantages of this goal"
-                            ></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="goal-user-id" data-i18n="label_user_id"
-                                >User ID</label
-                            >
-                            <select id="goal-user-id" required>
-                                <option value="" data-i18n="opt_select_user">
-                                    Select a user...
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label
-                                for="goal-deadline"
-                                data-i18n="label_deadline"
-                                >Deadline</label
-                            >
-                            <input type="date" id="goal-deadline" required />
-                        </div>
-
-                        <div class="form-actions">
-                            <button
-                                type="submit"
-                                class="btn btn-primary"
-                                id="goal-submit-btn"
-                                data-i18n="btn_create"
-                            >
-                                Create
-                            </button>
-                            <button
-                                type="button"
-                                class="btn btn-secondary"
-                                id="goal-cancel-btn"
-                                data-i18n="btn_cancel"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="table-wrapper">
-                    <table id="goals-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th data-i18n="th_name">Name</th>
-                                <th data-i18n="th_description">Description</th>
-                                <th data-i18n="th_price">Price</th>
-                                <th data-i18n="th_pros">Pros</th>
-                                <th data-i18n="th_cons">Cons</th>
-                                <th data-i18n="th_user_id">User ID</th>
-                                <th data-i18n="th_deadline">Deadline</th>
-                                <th data-i18n="th_created_at">Created At</th>
-                                <th data-i18n="th_actions">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="goals-tbody">
-                            <tr>
-                                <td
-                                    colspan="10"
-                                    class="empty-msg"
-                                    data-i18n="loading"
+                            <div class="form-group">
+                                <label for="goal-name" data-i18n="label_name"
+                                    >Name</label
                                 >
-                                    Loading...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                <input
+                                    type="text"
+                                    id="goal-name"
+                                    data-i18n-placeholder="ph_goal_name"
+                                    placeholder="Goal name"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label
+                                    for="goal-description"
+                                    data-i18n="label_description"
+                                    >Description</label
+                                >
+                                <textarea
+                                    id="goal-description"
+                                    rows="2"
+                                    data-i18n-placeholder="ph_goal_description"
+                                    placeholder="Goal description"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="goal-price" data-i18n="label_price"
+                                    >Price ($)</label
+                                >
+                                <input
+                                    type="number"
+                                    id="goal-price"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="goal-pros" data-i18n="label_pros"
+                                    >Pros</label
+                                >
+                                <textarea
+                                    id="goal-pros"
+                                    rows="2"
+                                    data-i18n-placeholder="ph_pros"
+                                    placeholder="Advantages of this goal"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="goal-cons" data-i18n="label_cons"
+                                    >Cons</label
+                                >
+                                <textarea
+                                    id="goal-cons"
+                                    rows="2"
+                                    data-i18n-placeholder="ph_cons"
+                                    placeholder="Disadvantages of this goal"
+                                ></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label
+                                    for="goal-deadline"
+                                    data-i18n="label_deadline"
+                                    >Deadline</label
+                                >
+                                <input
+                                    type="date"
+                                    id="goal-deadline"
+                                    required
+                                />
+                            </div>
+
+                            <div class="form-actions">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    id="goal-submit-btn"
+                                    data-i18n="btn_create"
+                                >
+                                    Create
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    id="goal-cancel-btn"
+                                    data-i18n="btn_cancel"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table id="goals-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th data-i18n="th_name">Name</th>
+                                    <th data-i18n="th_description">
+                                        Description
+                                    </th>
+                                    <th data-i18n="th_price">Price</th>
+                                    <th data-i18n="th_pros">Pros</th>
+                                    <th data-i18n="th_cons">Cons</th>
+                                    <th data-i18n="th_deadline">Deadline</th>
+                                    <th data-i18n="th_created_at">
+                                        Created At
+                                    </th>
+                                    <th data-i18n="th_actions">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="goals-tbody">
+                                <tr>
+                                    <td
+                                        colspan="9"
+                                        class="empty-msg"
+                                        data-i18n="loading"
+                                    >
+                                        Loading...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
         </main>

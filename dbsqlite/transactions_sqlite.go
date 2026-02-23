@@ -34,6 +34,31 @@ func GetAllTransactions(ctx context.Context, db *sql.DB) ([]model.Transaction, e
 	return transactionsList, nil
 }
 
+func GetAllTransactionsByUserID(ctx context.Context, id int64, db *sql.DB) ([]model.Transaction, error) {
+	const query = "SELECT id, description, amount, is_debt, created_at, user_id FROM transactions WHERE user_id = ?"
+	var transactionsList []model.Transaction
+
+	rows, err := db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, fmt.Errorf("could not execute the query for transactions using user_id: %w", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var transaction model.Transaction
+		if err := rows.Scan(&transaction.ID, &transaction.Desc, &transaction.Amount, &transaction.IsDebt, &transaction.CreatedAt, &transaction.UserID); err != nil {
+			return nil, fmt.Errorf("could not send the rows data to transaction struct: %w", err)
+		}
+		transactionsList = append(transactionsList, transaction)
+	}
+	if err := rows.Err(); err != nil{
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	
+	return transactionsList, nil
+}
+
 // CreateTransaction inserts a new transaction into the database
 func CreateTransaction(ctx context.Context, transaction model.Transaction, db *sql.DB) (*model.Transaction, error) {
 	const createStmt = "INSERT INTO transactions(description, amount, is_debt, user_id)VALUES(?,?,?,?)"

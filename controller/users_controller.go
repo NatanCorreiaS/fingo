@@ -41,6 +41,42 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, usersList)
 }
+func GetAllTransactionsByUserIDHandler(w http.ResponseWriter, r *http.Request){
+	ctx, cancel := dbsqlite.NewDBContext()
+	defer cancel()
+	
+	id, ok := GetID(r.PathValue("id"),w ,r)
+	if !ok{
+		return
+	}
+	
+	transactionsList, err := service.GetAllTransactionsByUserID(ctx, id)
+	if err != nil{
+		log.Println(err)
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "transactions not found for user"})
+		return
+	}
+	
+	writeJSON(w, http.StatusOK, transactionsList)
+}
+
+func GetAllGoalsByUserIDHandler(w http.ResponseWriter, r *http.Request){
+	ctx, cancel := dbsqlite.NewDBContext()
+	defer cancel()
+	
+	id, ok := GetID(r.PathValue("id"), w,r)
+	if !ok{
+		return
+	}
+	
+	goalsList, err := service.GetAllGoalsByUserID(ctx, id)
+	if err != nil{
+		log.Println(err)
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "goals not found for user"})
+		return
+	}
+	writeJSON(w, http.StatusOK, goalsList)
+}
 
 // CreateUserHandler handles POST /users and creates a new user from the request body.
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {

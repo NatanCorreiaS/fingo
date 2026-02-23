@@ -66,6 +66,8 @@ const translations = {
     btn_update: "Update",
     btn_cancel: "Cancel",
     btn_delete: "Delete",
+    btn_change_user: "Change",
+    btn_go_to_users: "Go to Users",
 
     // Table headers
     th_username: "Username",
@@ -87,8 +89,8 @@ const translations = {
     // Status / empty messages
     loading: "Loading...",
     no_users: "No users found. Create one to get started!",
-    no_transactions: "No transactions found. Create one to get started!",
-    no_goals: "No goals found. Create one to get started!",
+    no_transactions: "No transactions found for this user.",
+    no_goals: "No goals found for this user.",
     fail_users: "Failed to load users",
     fail_transactions: "Failed to load transactions",
     fail_goals: "Failed to load goals",
@@ -104,6 +106,7 @@ const translations = {
     toast_goal_updated: "Goal updated successfully",
     toast_goal_deleted: "Goal deleted successfully",
     toast_select_user: "Please select a user",
+    toast_user_selected: 'User "{name}" selected',
 
     // Confirm dialogs
     confirm_delete_user:
@@ -123,6 +126,16 @@ const translations = {
     // Currency
     currency_symbol: "$",
     date_locale: "en-US",
+
+    // Selected user
+    no_user_selected: "No user selected",
+    selected_user_label: "Selected:",
+    hint_click_user:
+      "Click on a user row to select it and view their transactions and goals.",
+    prompt_select_user_transactions:
+      "Select a user from the Users tab to view their transactions.",
+    prompt_select_user_goals:
+      "Select a user from the Users tab to view their goals.",
   },
   pt: {
     // Header
@@ -177,6 +190,8 @@ const translations = {
     btn_update: "Atualizar",
     btn_cancel: "Cancelar",
     btn_delete: "Excluir",
+    btn_change_user: "Trocar",
+    btn_go_to_users: "Ir para Usuários",
 
     // Table headers
     th_username: "Nome de Usuário",
@@ -198,8 +213,8 @@ const translations = {
     // Status / empty messages
     loading: "Carregando...",
     no_users: "Nenhum usuário encontrado. Crie um para começar!",
-    no_transactions: "Nenhuma transação encontrada. Crie uma para começar!",
-    no_goals: "Nenhum objetivo encontrado. Crie um para começar!",
+    no_transactions: "Nenhuma transação encontrada para este usuário.",
+    no_goals: "Nenhum objetivo encontrado para este usuário.",
     fail_users: "Falha ao carregar usuários",
     fail_transactions: "Falha ao carregar transações",
     fail_goals: "Falha ao carregar objetivos",
@@ -215,6 +230,7 @@ const translations = {
     toast_goal_updated: "Objetivo atualizado com sucesso",
     toast_goal_deleted: "Objetivo excluído com sucesso",
     toast_select_user: "Por favor, selecione um usuário",
+    toast_user_selected: 'Usuário "{name}" selecionado',
 
     // Confirm dialogs
     confirm_delete_user:
@@ -234,6 +250,16 @@ const translations = {
     // Currency
     currency_symbol: "R$",
     date_locale: "pt-BR",
+
+    // Selected user
+    no_user_selected: "Nenhum usuário selecionado",
+    selected_user_label: "Selecionado:",
+    hint_click_user:
+      "Clique em uma linha de usuário para selecioná-lo e ver suas transações e objetivos.",
+    prompt_select_user_transactions:
+      "Selecione um usuário na aba Usuários para ver suas transações.",
+    prompt_select_user_goals:
+      "Selecione um usuário na aba Usuários para ver seus objetivos.",
   },
 };
 
@@ -279,13 +305,15 @@ function applyLanguage() {
   document
     .getElementById("lang-pt")
     .classList.toggle("active", currentLang === "pt");
+
+  // Update selected user bar text
+  updateSelectedUserBar();
 }
 
 function setLanguage(lang) {
   currentLang = lang;
   localStorage.setItem(LANG_KEY, lang);
   applyLanguage();
-  // Re-render any dynamic content in the currently active tab
   refreshActiveTab();
 }
 
@@ -405,25 +433,118 @@ async function apiFetch(url, options = {}) {
   }
 }
 
+// ========================================================================
+//  SELECTED USER STATE
+// ========================================================================
+
+let selectedUser = null; // { id, user_name }
+
+function updateSelectedUserBar() {
+  const bar = document.getElementById("selected-user-bar");
+  const nameEl = document.getElementById("selected-user-name");
+
+  if (selectedUser) {
+    nameEl.textContent =
+      t("selected_user_label") + " " + selectedUser.user_name;
+    nameEl.removeAttribute("data-i18n");
+    bar.classList.remove("hidden");
+  } else {
+    bar.classList.add("hidden");
+  }
+}
+
+function selectUser(id, userName) {
+  selectedUser = { id: id, user_name: userName };
+  updateSelectedUserBar();
+  highlightSelectedRow();
+  showToast(t("toast_user_selected", { name: userName }), "info");
+}
+
+function deselectUser() {
+  selectedUser = null;
+  updateSelectedUserBar();
+  highlightSelectedRow();
+  updateTransactionsView();
+  updateGoalsView();
+}
+
+function highlightSelectedRow() {
+  document.querySelectorAll("#users-tbody tr").forEach((row) => {
+    row.classList.remove("selected-row");
+  });
+  if (selectedUser) {
+    const row = document.querySelector(
+      `#users-tbody tr[data-user-id="${selectedUser.id}"]`,
+    );
+    if (row) row.classList.add("selected-row");
+  }
+}
+
+function updateTransactionsView() {
+  const noUser = document.getElementById("transactions-no-user");
+  const content = document.getElementById("transactions-content");
+  if (selectedUser) {
+    noUser.classList.add("hidden");
+    content.classList.remove("hidden");
+  } else {
+    noUser.classList.remove("hidden");
+    content.classList.add("hidden");
+  }
+}
+
+function updateGoalsView() {
+  const noUser = document.getElementById("goals-no-user");
+  const content = document.getElementById("goals-content");
+  if (selectedUser) {
+    noUser.classList.add("hidden");
+    content.classList.remove("hidden");
+  } else {
+    noUser.classList.remove("hidden");
+    content.classList.add("hidden");
+  }
+}
+
+// Deselect button
+document.getElementById("btn-deselect-user").addEventListener("click", () => {
+  deselectUser();
+  // Switch to users tab
+  switchToTab("users");
+});
+
+// "Go to Users" buttons on the no-user prompts
+document
+  .getElementById("btn-go-users-from-transactions")
+  .addEventListener("click", () => {
+    switchToTab("users");
+  });
+
+document
+  .getElementById("btn-go-users-from-goals")
+  .addEventListener("click", () => {
+    switchToTab("users");
+  });
+
 // ===== Tab Navigation =====
 
 const tabButtons = document.querySelectorAll(".tab-btn");
 const tabContents = document.querySelectorAll(".tab-content");
 
+function switchToTab(tabName) {
+  tabButtons.forEach((b) => b.classList.remove("active"));
+  tabContents.forEach((c) => c.classList.remove("active"));
+
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabName}"]`);
+  if (btn) btn.classList.add("active");
+  document.getElementById(`tab-${tabName}`).classList.add("active");
+
+  if (tabName === "users") loadUsers();
+  else if (tabName === "transactions") loadTransactions();
+  else if (tabName === "goals") loadGoals();
+}
+
 tabButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    const target = btn.dataset.tab;
-
-    tabButtons.forEach((b) => b.classList.remove("active"));
-    tabContents.forEach((c) => c.classList.remove("active"));
-
-    btn.classList.add("active");
-    document.getElementById(`tab-${target}`).classList.add("active");
-
-    // Refresh data when switching tabs
-    if (target === "users") loadUsers();
-    else if (target === "transactions") loadTransactions();
-    else if (target === "goals") loadGoals();
+    switchToTab(btn.dataset.tab);
   });
 });
 
@@ -481,6 +602,12 @@ userForm.addEventListener("submit", async (e) => {
         body: JSON.stringify(body),
       });
       showToast(t("toast_user_updated"));
+
+      // Update selectedUser name if editing the selected user
+      if (selectedUser && selectedUser.id === editingUserId) {
+        selectedUser.user_name = userName;
+        updateSelectedUserBar();
+      }
     } else {
       await apiFetch(API.users, {
         method: "POST",
@@ -522,16 +649,17 @@ function renderUsers(users) {
   usersTbody.innerHTML = users
     .map(
       (u) => `
-        <tr>
+        <tr data-user-id="${u.id}" onclick="handleUserRowClick(${u.id}, '${escapeHtml(u.user_name).replace(/'/g, "\\'")}')"
+            class="${selectedUser && selectedUser.id === u.id ? "selected-row" : ""}">
             <td>${u.id}</td>
             <td>${escapeHtml(u.user_name)}</td>
             <td><span class="${moneyClass(u.current_amount)}">${sym}${centsToDisplay(u.current_amount)}</span></td>
             <td><span class="${moneyClass(u.monthly_inputs)}">${sym}${centsToDisplay(u.monthly_inputs)}</span></td>
-            <td><span class="${moneyClass(u.monthly_outputs)}">${sym}${centsToDisplay(u.monthly_outputs)}</span></td>
+            <td><span class="money negative">${sym}${centsToDisplay(u.monthly_outputs)}</span></td>
             <td>
                 <div class="actions-cell">
-                    <button class="btn btn-icon edit" title="Edit" onclick="editUser(${u.id})">✏️</button>
-                    <button class="btn btn-icon delete" title="Delete" onclick="deleteUser(${u.id}, '${escapeHtml(u.user_name).replace(/'/g, "\\'")}')">🗑️</button>
+                    <button class="btn btn-icon edit" title="Edit" onclick="event.stopPropagation(); editUser(${u.id})">✏️</button>
+                    <button class="btn btn-icon delete" title="Delete" onclick="event.stopPropagation(); deleteUser(${u.id}, '${escapeHtml(u.user_name).replace(/'/g, "\\'")}')">🗑️</button>
                 </div>
             </td>
         </tr>
@@ -539,6 +667,10 @@ function renderUsers(users) {
     )
     .join("");
 }
+
+window.handleUserRowClick = function (id, userName) {
+  selectUser(id, userName);
+};
 
 window.editUser = async function (id) {
   try {
@@ -568,6 +700,10 @@ window.deleteUser = function (id, name) {
     try {
       await apiFetch(`${API.users}/${id}`, { method: "DELETE" });
       showToast(t("toast_user_deleted"));
+      // If the deleted user was selected, deselect
+      if (selectedUser && selectedUser.id === id) {
+        deselectUser();
+      }
       await loadUsers();
     } catch {
       // error already shown
@@ -589,21 +725,18 @@ const transactionsTbody = document.getElementById("transactions-tbody");
 
 let editingTransactionId = null;
 
-document
-  .getElementById("btn-add-transaction")
-  .addEventListener("click", async () => {
-    editingTransactionId = null;
-    transactionFormTitle.textContent = t("form_create_transaction");
-    transactionSubmitBtn.textContent = t("btn_create");
-    transactionForm.reset();
-    document.getElementById("transaction-id").value = "";
-    await populateUserSelect("transaction-user-id");
-    // Show user_id select for creation, hide for editing
-    document
-      .getElementById("transaction-user-id")
-      .closest(".form-group").style.display = "";
-    transactionFormContainer.classList.remove("hidden");
-  });
+document.getElementById("btn-add-transaction").addEventListener("click", () => {
+  if (!selectedUser) {
+    showToast(t("toast_select_user"), "error");
+    return;
+  }
+  editingTransactionId = null;
+  transactionFormTitle.textContent = t("form_create_transaction");
+  transactionSubmitBtn.textContent = t("btn_create");
+  transactionForm.reset();
+  document.getElementById("transaction-id").value = "";
+  transactionFormContainer.classList.remove("hidden");
+});
 
 document
   .getElementById("transaction-cancel-btn")
@@ -623,10 +756,6 @@ transactionForm.addEventListener("submit", async (e) => {
     document.getElementById("transaction-amount").value,
   );
   const isDebt = document.getElementById("transaction-is-debt").checked;
-  const userId = parseInt(
-    document.getElementById("transaction-user-id").value,
-    10,
-  );
 
   try {
     if (editingTransactionId) {
@@ -641,7 +770,7 @@ transactionForm.addEventListener("submit", async (e) => {
       });
       showToast(t("toast_transaction_updated"));
     } else {
-      if (!userId) {
+      if (!selectedUser) {
         showToast(t("toast_select_user"), "error");
         return;
       }
@@ -651,7 +780,7 @@ transactionForm.addEventListener("submit", async (e) => {
           description: description,
           amount: amount,
           is_debt: isDebt,
-          user_id: userId,
+          user_id: selectedUser.id,
         }),
       });
       showToast(t("toast_transaction_created"));
@@ -667,17 +796,22 @@ transactionForm.addEventListener("submit", async (e) => {
 });
 
 async function loadTransactions() {
+  updateTransactionsView();
+  if (!selectedUser) return;
+
   try {
-    const transactions = await apiFetch(API.transactions);
+    const transactions = await apiFetch(
+      `${API.users}/transactions/${selectedUser.id}`,
+    );
     renderTransactions(transactions);
   } catch {
-    transactionsTbody.innerHTML = `<tr><td colspan="7" class="empty-msg">${escapeHtml(t("fail_transactions"))}</td></tr>`;
+    transactionsTbody.innerHTML = `<tr><td colspan="6" class="empty-msg">${escapeHtml(t("fail_transactions"))}</td></tr>`;
   }
 }
 
 function renderTransactions(transactions) {
   if (!transactions || transactions.length === 0) {
-    transactionsTbody.innerHTML = `<tr><td colspan="7" class="empty-msg">${escapeHtml(t("no_transactions"))}</td></tr>`;
+    transactionsTbody.innerHTML = `<tr><td colspan="6" class="empty-msg">${escapeHtml(t("no_transactions"))}</td></tr>`;
     return;
   }
 
@@ -692,7 +826,6 @@ function renderTransactions(transactions) {
             <td class="truncate" title="${escapeHtml(txn.description)}">${escapeHtml(txn.description) || "\u2014"}</td>
             <td><span class="${moneyClass(txn.amount)}">${sym}${centsToDisplay(txn.amount)}</span></td>
             <td><span class="badge ${txn.is_debt ? "badge-yes" : "badge-no"}">${txn.is_debt ? badgeYes : badgeNo}</span></td>
-            <td>${txn.user_id}</td>
             <td class="date-cell">${formatDate(txn.created_at)}</td>
             <td>
                 <div class="actions-cell">
@@ -719,11 +852,6 @@ window.editTransaction = async function (id) {
       txn.amount / 100
     ).toFixed(2);
     document.getElementById("transaction-is-debt").checked = txn.is_debt;
-    // Hide user_id select when editing (it cannot be changed via PATCH)
-    const userIdGroup = document
-      .getElementById("transaction-user-id")
-      .closest(".form-group");
-    userIdGroup.style.display = "none";
     transactionFormContainer.classList.remove("hidden");
   } catch {
     // error already shown
@@ -756,15 +884,16 @@ const goalsTbody = document.getElementById("goals-tbody");
 
 let editingGoalId = null;
 
-document.getElementById("btn-add-goal").addEventListener("click", async () => {
+document.getElementById("btn-add-goal").addEventListener("click", () => {
+  if (!selectedUser) {
+    showToast(t("toast_select_user"), "error");
+    return;
+  }
   editingGoalId = null;
   goalFormTitle.textContent = t("form_create_goal");
   goalSubmitBtn.textContent = t("btn_create");
   goalForm.reset();
   document.getElementById("goal-id").value = "";
-  await populateUserSelect("goal-user-id");
-  document.getElementById("goal-user-id").closest(".form-group").style.display =
-    "";
   goalFormContainer.classList.remove("hidden");
 });
 
@@ -782,7 +911,6 @@ goalForm.addEventListener("submit", async (e) => {
   const price = dollarsToCents(document.getElementById("goal-price").value);
   const pros = document.getElementById("goal-pros").value.trim();
   const cons = document.getElementById("goal-cons").value.trim();
-  const userId = parseInt(document.getElementById("goal-user-id").value, 10);
   const deadline = document.getElementById("goal-deadline").value;
 
   try {
@@ -801,7 +929,7 @@ goalForm.addEventListener("submit", async (e) => {
       });
       showToast(t("toast_goal_updated"));
     } else {
-      if (!userId) {
+      if (!selectedUser) {
         showToast(t("toast_select_user"), "error");
         return;
       }
@@ -813,7 +941,7 @@ goalForm.addEventListener("submit", async (e) => {
           price: price,
           pros: pros,
           cons: cons,
-          user_id: userId,
+          user_id: selectedUser.id,
           deadline: deadline,
         }),
       });
@@ -830,17 +958,20 @@ goalForm.addEventListener("submit", async (e) => {
 });
 
 async function loadGoals() {
+  updateGoalsView();
+  if (!selectedUser) return;
+
   try {
-    const goals = await apiFetch(API.goals);
+    const goals = await apiFetch(`${API.users}/goals/${selectedUser.id}`);
     renderGoals(goals);
   } catch {
-    goalsTbody.innerHTML = `<tr><td colspan="10" class="empty-msg">${escapeHtml(t("fail_goals"))}</td></tr>`;
+    goalsTbody.innerHTML = `<tr><td colspan="9" class="empty-msg">${escapeHtml(t("fail_goals"))}</td></tr>`;
   }
 }
 
 function renderGoals(goals) {
   if (!goals || goals.length === 0) {
-    goalsTbody.innerHTML = `<tr><td colspan="10" class="empty-msg">${escapeHtml(t("no_goals"))}</td></tr>`;
+    goalsTbody.innerHTML = `<tr><td colspan="9" class="empty-msg">${escapeHtml(t("no_goals"))}</td></tr>`;
     return;
   }
 
@@ -855,7 +986,6 @@ function renderGoals(goals) {
             <td><span class="${moneyClass(g.price)}">${sym}${centsToDisplay(g.price)}</span></td>
             <td class="truncate" title="${escapeHtml(g.pros)}">${escapeHtml(g.pros) || "\u2014"}</td>
             <td class="truncate" title="${escapeHtml(g.cons)}">${escapeHtml(g.cons) || "\u2014"}</td>
-            <td>${g.user_id}</td>
             <td class="date-cell">${formatDate(g.deadline)}</td>
             <td class="date-cell">${formatDate(g.created_at)}</td>
             <td>
@@ -882,11 +1012,6 @@ window.editGoal = async function (id) {
     document.getElementById("goal-price").value = (g.price / 100).toFixed(2);
     document.getElementById("goal-pros").value = g.pros || "";
     document.getElementById("goal-cons").value = g.cons || "";
-    // Hide user_id when editing (cannot be changed via PATCH)
-    const userIdGroup = document
-      .getElementById("goal-user-id")
-      .closest(".form-group");
-    userIdGroup.style.display = "none";
     // Set deadline
     if (g.deadline) {
       try {
@@ -923,28 +1048,6 @@ window.deleteGoal = function (id, name) {
 };
 
 // ========================================================================
-//  POPULATE USER SELECTS
-// ========================================================================
-
-async function populateUserSelect(selectId) {
-  const select = document.getElementById(selectId);
-  try {
-    const users = await apiFetch(API.users);
-    select.innerHTML = `<option value="">${escapeHtml(t("opt_select_user"))}</option>`;
-    if (users && users.length > 0) {
-      users.forEach((u) => {
-        const opt = document.createElement("option");
-        opt.value = u.id;
-        opt.textContent = `${u.user_name} (ID: ${u.id})`;
-        select.appendChild(opt);
-      });
-    }
-  } catch {
-    select.innerHTML = `<option value="">${escapeHtml(t("opt_failed_users"))}</option>`;
-  }
-}
-
-// ========================================================================
 //  LANGUAGE SWITCHER EVENT LISTENERS
 // ========================================================================
 
@@ -962,5 +1065,7 @@ document.getElementById("lang-pt").addEventListener("click", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
   applyLanguage();
+  updateTransactionsView();
+  updateGoalsView();
   loadUsers();
 });
