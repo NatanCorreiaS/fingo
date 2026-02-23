@@ -40,6 +40,8 @@ Fingo é uma aplicação demonstrativa para controle de objetivos financeiros si
 
 A GUI foi gerada com auxílio de IA para acelerar a prototipação — o backend e as regras de negócio foram implementados manualmente.
 
+![versao portuguesa do web app](./imgs/pt-br-side.png)
+
 ### Funcionalidades
 1. Criação de usuário, transação e metas com garantia de atomicidade.
 2. Apenas drivers SQLite como dependência externa.
@@ -67,17 +69,112 @@ Pré-requisitos: Go (1.20+ recomendado), Git.
 Observação: o projeto utiliza SQLite — o banco será criado automaticamente no diretório local.
 
 ### Como usar
-- Endpoints (exemplos):
-  - POST /users — cria usuário
-  - POST /transactions — cria transação (de/para usuário)
-  - POST /goals — cria meta financeira
-  - GET /users/:id — detalhes do usuário e metas
 
-- Fluxo típico:
-  1. Criar usuário.
-  2. Registrar transações (entradas/saídas).
-  3. Criar metas associadas ao usuário.
-  4. Acompanhar progresso da meta (soma de transações marcadas ou categorizadas).
+Observação importante sobre o tipo `Money`: os campos do tipo `Money` no modelo representam valores em centavos (inteiro). Ex.: R$ 10,50 -> 1050. Para evitar perda de precisão, o backend espera um número inteiro (centavos) nos campos monetários.
+
+Endpoints (exemplos) com JSON e comandos `curl`:
+
+- Criar usuário (POST /users)
+
+Inclua no body:
+```json
+{
+  "user_name": "Alice",
+  "current_amount": 105000,
+  "monthly_inputs": 500000,
+  "monthly_outputs": 200000
+}
+```
+
+Exemplo `curl`:
+```bash
+curl -sS -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"user_name":"Alice","current_amount":105000,"monthly_inputs":500000,"monthly_outputs":200000}'
+```
+
+- Criar transação (POST /transactions)
+
+Body esperado:
+```json
+{
+  "description": "Compra no mercado",
+  "amount": 7500,
+  "is_debt": false,
+  "user_id": 1
+}
+```
+
+`curl`:
+```bash
+curl -sS -X POST http://localhost:8080/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Compra no mercado","amount":7500,"is_debt":false,"user_id":1}'
+```
+
+- Criar meta (POST /goals)
+
+Body para criar uma meta:
+```json
+{
+  "name": "Notebook novo",
+  "description": "Economizar para trocar meu notebook",
+  "price": 350000,
+  "pros": "Melhor performance",
+  "cons": "Custo elevado",
+  "user_id": 1,
+  "deadline": "2026-12-31"
+}
+```
+
+`curl`:
+```bash
+curl -sS -X POST http://localhost:8080/goals \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Notebook novo","description":"Economizar para trocar meu notebook","price":350000,"pros":"Melhor performance","cons":"Custo elevado","user_id":1,"deadline":"2026-12-31"}'
+```
+
+- Obter usuário com ID (GET /users/:id)
+
+`curl`:
+```bash
+curl -sS http://localhost:8080/users/1
+```
+
+Resposta (exemplo):
+```json
+{
+  "id": 1,
+  "user_name": "Alice",
+  "current_amount": 105000,
+  "monthly_inputs": 500000,
+  "monthly_outputs": 200000
+}
+```
+
+- Atualizar parcialmente usuário (PATCH /users/{id})
+
+Ex.: atualizar apenas o nome e o current_amount:
+```json
+{
+  "user_name": "Alice Silva",
+  "current_amount": 110000
+}
+```
+
+`curl`:
+```bash
+curl -sS -X PATCH http://localhost:8080/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"user_name":"Alice Silva","current_amount":110000}'
+```
+
+Dicas rápidas:
+- Certifique-se de que tenha a ferramenta CURL em seu terminal.
+- Sempre envia JSON válido com `Content-Type: application/json`.
+- Valores monetários usem inteiros em centavos.
+- `created_at` e `id` são gerados pelo backend; não os envie ao criar recursos.
+- `deadline` (em `goals`) é uma string (ex.: `"YYYY-MM-DD"`), siga o formato ISO para consistência.
 
 ### Arquitetura (resumida)
 - Backend: Go (std lib)
@@ -96,6 +193,8 @@ GPL3 — consulte o arquivo `LICENSE` para detalhes.
 Fingo is a small demonstrative application to manage financial goals, users and transactions. The project is written in Go with minimal external dependencies and aims to be concise and educational.
 
 The GUI is an AI-assisted prototype; the backend logic and database interactions are handcrafted.
+
+![english version of the web app](./imgs/en-us-side.png)
 
 ### Features
 1. Create users, transactions and goals with atomic operations.
@@ -122,19 +221,114 @@ Requirements: Go (1.20+ recommended), Git.
 Note: SQLite DB file will be created automatically in the project folder.
 
 ### Usage
-- Example endpoints:
-  - POST /users — create a user
-  - POST /transactions — create a transaction
-  - POST /goals — create a financial goal
-  - GET /users/:id — user details and goals
 
-- Typical flow:
-  1. Create user.
-  2. Record transactions (credits/debits).
-  3. Create goals associated with user.
-  4. Track goal progress (sum of categorized/flagged transactions).
+Important note about `Money` fields: they are represented in cents (integers). Example: $10.50 -> 1050. The API expects integer cent values for monetary fields.
+
+Endpoints with JSON examples and `curl`:
+
+- Create a user (POST /users)
+
+Request body:
+```json
+{
+  "user_name": "Alice",
+  "current_amount": 105000,
+  "monthly_inputs": 500000,
+  "monthly_outputs": 200000
+}
+```
+
+`curl`:
+```bash
+curl -sS -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"user_name":"Alice","current_amount":105000,"monthly_inputs":500000,"monthly_outputs":200000}'
+```
+
+- Create a transaction (POST /transactions)
+
+Request body:
+```json
+{
+  "description": "Grocery shopping",
+  "amount": 7500,
+  "is_debt": false,
+  "user_id": 1
+}
+```
+
+`curl`:
+```bash
+curl -sS -X POST http://localhost:8080/transactions \
+  -H "Content-Type: application/json" \
+  -d '{"description":"Grocery shopping","amount":7500,"is_debt":false,"user_id":1}'
+```
+
+- Create a goal (POST /goals)
+
+Request body:
+```json
+{
+  "name": "New Laptop",
+  "description": "Save to replace my laptop",
+  "price": 350000,
+  "pros": "Better performance",
+  "cons": "High cost",
+  "user_id": 1,
+  "deadline": "2026-12-31"
+}
+```
+
+`curl`:
+```bash
+curl -sS -X POST http://localhost:8080/goals \
+  -H "Content-Type: application/json" \
+  -d '{"name":"New Laptop","description":"Save to replace my laptop","price":350000,"pros":"Better performance","cons":"High cost","user_id":1,"deadline":"2026-12-31"}'
+```
+
+- Get user by ID (GET /users/:id)
+
+`curl`:
+```bash
+curl -sS http://localhost:8080/users/1
+```
+
+Sample response:
+```json
+{
+  "id": 1,
+  "user_name": "Alice",
+  "current_amount": 105000,
+  "monthly_inputs": 500000,
+  "monthly_outputs": 200000
+}
+```
+
+- Partial update for user (PATCH /users/{id})
+
+Example body:
+```json
+{
+  "user_name": "Alice Smith",
+  "current_amount": 110000
+}
+```
+
+`curl`:
+```bash
+curl -sS -X PATCH http://localhost:8080/users/1 \
+  -H "Content-Type: application/json" \
+  -d '{"user_name":"Alice Smith","current_amount":110000}'
+```
+
+Quick tips:
+- Send `Content-Type: application/json`.
+- Money values are integers in cents.
+- Do not send `id` or `created_at` when creating resources (they are server-generated).
+- Use ISO dates (YYYY-MM-DD) for `deadline` in goals.
 
 ### Architecture (brief)
+- Certify yourself that you have the tool CURL in your terminal.
 - Backend: Go (standard library)
 - Database: SQLite (file-based)
 - GUI: AI-assisted static prototype (HTML/CSS/JS)
